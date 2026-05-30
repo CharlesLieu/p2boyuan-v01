@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Enums\UserRole;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -118,6 +119,33 @@ class DatabaseSchemaAndDemoSeederTest extends TestCase
             'status_logs_application_id_created_at_index',
             collect(DB::select("PRAGMA index_list('status_logs')"))->pluck('name')->all(),
         );
+    }
+
+    public function test_user_assignment_foreign_keys_exist_and_reject_invalid_references(): void
+    {
+        $foreignKeys = collect(DB::select("PRAGMA foreign_key_list('users')"));
+
+        $this->assertTrue(
+            $foreignKeys->contains(fn ($key) => $key->from === 'store_id' && $key->table === 'stores' && $key->on_delete === 'SET NULL'),
+            'users.store_id should reference stores.id with ON DELETE SET NULL',
+        );
+        $this->assertTrue(
+            $foreignKeys->contains(fn ($key) => $key->from === 'sales_agent_id' && $key->table === 'sales_agents' && $key->on_delete === 'SET NULL'),
+            'users.sales_agent_id should reference sales_agents.id with ON DELETE SET NULL',
+        );
+
+        $this->expectException(QueryException::class);
+
+        DB::table('users')->insert([
+            'username' => 'invalid-store-user',
+            'display_name' => 'Invalid Store User',
+            'role' => UserRole::STORE->value,
+            'store_id' => '00000000-0000-0000-0000-000000000000',
+            'status' => 'ACTIVE',
+            'password' => 'demo-password',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     public function test_demo_seeder_creates_v01_demo_workflow_data(): void
