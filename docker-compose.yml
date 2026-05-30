@@ -41,7 +41,7 @@ services:
       DB_PORT: 3306
       DB_DATABASE: ${MYSQL_DATABASE:-p2boyuan_v01}
       DB_USERNAME: ${MYSQL_USER:-p2boyuan}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-p2boyuan_dev_password}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in root .env}
       CACHE_STORE: database
       SESSION_DRIVER: database
       QUEUE_CONNECTION: database
@@ -60,8 +60,8 @@ services:
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-p2boyuan_v01}
       MYSQL_USER: ${MYSQL_USER:-p2boyuan}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-p2boyuan_dev_password}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev_password}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in root .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in root .env}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -72,7 +72,7 @@ services:
           "ping",
           "-h",
           "localhost",
-          "-p${MYSQL_ROOT_PASSWORD:-root_dev_password}",
+          "-p${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in root .env}",
         ]
       interval: 10s
       timeout: 5s
