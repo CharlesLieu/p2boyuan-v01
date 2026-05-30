@@ -1,13 +1,17 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import AppShell from '../components/layout/AppShell.vue'
 import LoginView from '../views/LoginView.vue'
-import WorkspaceView from '../views/WorkspaceView.vue'
+import StoreWorkspace from '../views/store/StoreWorkspace.vue'
+import SalesWorkspace from '../views/sales/SalesWorkspace.vue'
+import AuditWorkspace from '../views/audit/AuditWorkspace.vue'
+import CashierWorkspace from '../views/cashier/CashierWorkspace.vue'
+import AdminWorkspace from '../views/admin/AdminWorkspace.vue'
 import { useAuthStore, type UserRole } from '../stores/auth'
 
 const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: '/store',
-    component: WorkspaceView,
+    component: StoreWorkspace,
     meta: {
       title: '店家工作台',
       role: 'STORE',
@@ -17,7 +21,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/sales',
-    component: WorkspaceView,
+    component: SalesWorkspace,
     meta: {
       title: '业务员工作台',
       role: 'SALES',
@@ -27,7 +31,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/audit',
-    component: WorkspaceView,
+    component: AuditWorkspace,
     meta: {
       title: '审核员工作台',
       role: 'AUDITOR',
@@ -37,7 +41,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/cashier',
-    component: WorkspaceView,
+    component: CashierWorkspace,
     meta: {
       title: '出纳工作台',
       role: 'CASHIER',
@@ -47,7 +51,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/admin',
-    component: WorkspaceView,
+    component: AdminWorkspace,
     meta: {
       title: '超级管理员',
       role: 'SUPER_ADMIN',

@@ -21,7 +21,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -362,6 +363,87 @@ a {
   align-items: start;
 }
 
+.hero-actions,
+.role-actions,
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.role-actions,
+.operation-form,
+.operator-panel,
+.cashier-grid,
+.admin-grid,
+.table-panel,
+.operator-column {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #eceef4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.role-actions span {
+  color: #747b88;
+  font-size: 13px;
+}
+
+.operation-form,
+.operator-panel,
+.cashier-grid,
+.admin-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.operation-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operator-panel,
+.admin-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cashier-grid {
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+}
+
+.operator-column {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.operator-column h3,
+.panel-heading h3 {
+  margin: 0;
+  color: #171a22;
+  font-size: 17px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.drawer-form {
+  padding-right: 8px;
+}
+
 @media (max-width: 960px) {
   .login-page {
     padding: 20px;
@@ -378,7 +460,11 @@ a {
 
   .hero-metrics,
   .summary-grid,
-  .application-workbench {
+  .application-workbench,
+  .operation-form,
+  .operator-panel,
+  .cashier-grid,
+  .admin-grid {
     grid-template-columns: 1fr;
   }
 
