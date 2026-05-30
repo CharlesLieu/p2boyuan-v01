@@ -151,6 +151,61 @@ class ReviewAndPayoutFlowTest extends TestCase
         ]);
     }
 
+    public function test_sales_supplement_can_only_be_submitted_by_current_owner_user(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $auditor = User::query()->where('username', 'audit001')->firstOrFail();
+        $ownerSales = User::query()->where('username', 'sales001')->firstOrFail();
+        $application = $this->application('A20260530004');
+
+        $this->actingAs($auditor, 'sanctum')
+            ->postJson("/api/v1/applications/{$application->id}/request-supplement", [
+                'ownerRole' => UserRole::SALES->value,
+                'note' => '请业务员补充验机照片。',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.application.status', ApplicationStatus::NEEDS_SUPPLEMENT->value)
+            ->assertJsonPath('data.application.currentOwnerRole', UserRole::SALES->value)
+            ->assertJsonPath('data.application.currentOwnerUserId', $ownerSales->id);
+
+        $sameAgentOtherUser = User::factory()->create([
+            'username' => 'sales001-shadow',
+            'display_name' => '同业务员档案的其他账号',
+            'role' => UserRole::SALES->value,
+            'store_id' => null,
+            'sales_agent_id' => $ownerSales->sales_agent_id,
+            'status' => 'ACTIVE',
+        ]);
+
+        $payload = [
+            'note' => '已补充验机照片。',
+            'attachments' => [
+                [
+                    'fileName' => 'inspection-extra.png',
+                    'filePath' => 'demo/supplement/inspection-extra.png',
+                    'mimeType' => 'image/png',
+                    'fileSize' => 99000,
+                ],
+            ],
+        ];
+
+        $this->actingAs($sameAgentOtherUser, 'sanctum')
+            ->postJson("/api/v1/applications/{$application->id}/supplement", $payload)
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
+
+        $this->actingAs($ownerSales, 'sanctum')
+            ->postJson("/api/v1/applications/{$application->id}/supplement", $payload)
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.application.status', ApplicationStatus::PENDING_REVIEW->value)
+            ->assertJsonPath('data.application.currentOwnerRole', UserRole::AUDITOR->value)
+            ->assertJsonPath('data.attachments.0.fileName', 'inspection-extra.png');
+    }
+
     public function test_non_cashier_cannot_confirm_payout(): void
     {
         $this->seed(DemoSeeder::class);

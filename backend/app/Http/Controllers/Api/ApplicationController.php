@@ -304,15 +304,14 @@ class ApplicationController extends Controller
         }
 
         if ($application->current_owner_role === UserRole::STORE->value) {
-            return $role === UserRole::STORE->value && $user->store_id === $application->store_id;
+            return $role === UserRole::STORE->value
+                && $user->store_id === $application->store_id
+                && $application->current_owner_user_id === $user->id;
         }
 
         if ($application->current_owner_role === UserRole::SALES->value) {
             return $role === UserRole::SALES->value
-                && $user->sales_agent_id !== null
-                && $application->inspectionTasks()
-                    ->where('sales_agent_id', $user->sales_agent_id)
-                    ->exists();
+                && $application->current_owner_user_id === $user->id;
         }
 
         return false;
