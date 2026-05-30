@@ -1,1 +1,5 @@
 .runtime/
+.env
+.env.deploy
+backend/.env.docker
+frontend/.env.docker
