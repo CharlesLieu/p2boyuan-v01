@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: p2boyuan_v01_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: p2boyuan_v01
+      MYSQL_USER: p2boyuan
+      MYSQL_PASSWORD: p2boyuan_dev_password
+      MYSQL_ROOT_PASSWORD: root_dev_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql_data:
