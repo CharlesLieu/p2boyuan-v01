@@ -10,6 +10,7 @@ use App\Models\Application;
 use App\Models\StatusLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,58 +52,23 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
         $role = $this->roleValue($user);
+        $validated = $request->validated();
 
         if (! in_array($role, [UserRole::STORE->value, UserRole::SUPER_ADMIN->value], true)) {
             return $this->forbidden($request);
         }
 
-        $storeId = $role === UserRole::STORE->value ? $user->store_id : $request->validated('storeId');
+        $storeId = $role === UserRole::STORE->value ? $user->store_id : ($validated['storeId'] ?? null);
 
         if (! $storeId) {
             return $this->error($request, 'VALIDATION_ERROR', '请选择申请所属门店。', 422);
         }
 
-        $application = DB::transaction(function () use ($request, $user, $storeId): Application {
-            $application = Application::query()->create([
-                'application_no' => $this->nextApplicationNo(),
-                'source_type' => 'STORE_SUBMIT',
-                'store_id' => $storeId,
-                'created_by_user_id' => $user->id,
-                'current_owner_role' => UserRole::AUDITOR->value,
-                'current_owner_user_id' => null,
-                'status' => ApplicationStatus::PENDING_ASSIGNMENT,
-                'customer_name' => $request->validated('customerName'),
-                'customer_phone' => $request->validated('customerPhone'),
-                'id_type' => $request->validated('idType'),
-                'id_number' => $request->validated('idNumber'),
-                'customer_address' => $request->validated('customerAddress'),
-                'brand' => $request->validated('brand'),
-                'model' => $request->validated('model'),
-                'color' => $request->validated('color'),
-                'capacity' => $request->validated('capacity'),
-                'imei' => $request->validated('imei'),
-                'device_condition' => $request->validated('deviceCondition'),
-                'sale_price' => $request->validated('salePrice'),
-                'loan_amount' => $request->validated('loanAmount'),
-                'periods' => $request->validated('periods'),
-                'remark' => $request->validated('remark'),
-            ]);
+        $application = $this->createApplicationWithRetry($validated, $user, $storeId);
 
-            StatusLog::query()->create([
-                'application_id' => $application->id,
-                'actor_user_id' => $user->id,
-                'actor_role' => $this->roleValue($user),
-                'from_status' => null,
-                'to_status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
-                'message' => '店家提交验机申请。',
-                'metadata' => [
-                    'action' => 'SUBMIT_APPLICATION',
-                    'source' => 'ApplicationController',
-                ],
-            ]);
-
-            return $application->fresh(['store', 'createdBy']);
-        });
+        if (! $application) {
+            return $this->error($request, 'APPLICATION_NO_GENERATION_FAILED', '申请编号生成失败，请稍后重试。', 409);
+        }
 
         return $this->success($request, [
             'application' => $this->serializeApplication($application),
@@ -237,6 +203,64 @@ class ApplicationController extends Controller
     private function nextApplicationNo(): string
     {
         return 'A'.now()->format('YmdHis').str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     */
+    private function createApplicationWithRetry(array $validated, User $user, string $storeId): ?Application
+    {
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            try {
+                return DB::transaction(function () use ($validated, $user, $storeId): Application {
+                    $application = Application::query()->create([
+                        'application_no' => $this->nextApplicationNo(),
+                        'source_type' => 'STORE_SUBMIT',
+                        'store_id' => $storeId,
+                        'created_by_user_id' => $user->id,
+                        'current_owner_role' => UserRole::AUDITOR->value,
+                        'current_owner_user_id' => null,
+                        'status' => ApplicationStatus::PENDING_ASSIGNMENT,
+                        'customer_name' => $validated['customerName'],
+                        'customer_phone' => $validated['customerPhone'],
+                        'id_type' => $validated['idType'],
+                        'id_number' => $validated['idNumber'],
+                        'customer_address' => $validated['customerAddress'],
+                        'brand' => $validated['brand'],
+                        'model' => $validated['model'],
+                        'color' => $validated['color'] ?? null,
+                        'capacity' => $validated['capacity'] ?? null,
+                        'imei' => $validated['imei'] ?? null,
+                        'device_condition' => $validated['deviceCondition'] ?? null,
+                        'sale_price' => $validated['salePrice'],
+                        'loan_amount' => $validated['loanAmount'],
+                        'periods' => $validated['periods'],
+                        'remark' => $validated['remark'] ?? null,
+                    ]);
+
+                    StatusLog::query()->create([
+                        'application_id' => $application->id,
+                        'actor_user_id' => $user->id,
+                        'actor_role' => $this->roleValue($user),
+                        'from_status' => null,
+                        'to_status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
+                        'message' => '店家提交验机申请。',
+                        'metadata' => [
+                            'action' => 'SUBMIT_APPLICATION',
+                            'source' => 'ApplicationController',
+                        ],
+                    ]);
+
+                    return $application->fresh(['store', 'createdBy']);
+                });
+            } catch (UniqueConstraintViolationException $exception) {
+                if (! Str::contains($exception->getMessage(), 'application_no')) {
+                    throw $exception;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function roleValue(User $user): ?string

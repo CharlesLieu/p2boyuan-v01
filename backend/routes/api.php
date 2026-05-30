@@ -24,7 +24,8 @@ Route::middleware('auth:sanctum')
     ->prefix('v1')
     ->group(function (): void {
         Route::get('/applications', [ApplicationController::class, 'index']);
-        Route::post('/applications', [ApplicationController::class, 'store']);
+        Route::post('/applications', [ApplicationController::class, 'store'])
+            ->middleware('role:STORE,SUPER_ADMIN');
         Route::get('/applications/{applicationId}', [ApplicationController::class, 'show']);
         Route::get('/applications/{applicationId}/logs', [ApplicationController::class, 'logs']);
     });
