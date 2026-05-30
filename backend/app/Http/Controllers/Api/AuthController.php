@@ -7,16 +7,28 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
-        $credentials = $request->validate([
+        $validator = Validator::make($request->all(), [
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
+
+        if ($validator->fails()) {
+            return $this->error(
+                $request,
+                'VALIDATION_ERROR',
+                '请填写账号和密码。',
+                422,
+            );
+        }
+
+        $credentials = $validator->validated();
 
         $user = User::query()
             ->where('username', $credentials['username'])

@@ -66,6 +66,24 @@ class AuthTest extends TestCase
             ->assertJsonStructure(['error' => ['message'], 'requestId']);
     }
 
+    public function test_login_validation_errors_use_standard_error_shape(): void
+    {
+        $this->postJson('/api/v1/auth/login', [])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['error' => ['message'], 'requestId']);
+    }
+
+    public function test_me_requires_token_with_standard_error_shape(): void
+    {
+        $this->getJson('/api/v1/auth/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'UNAUTHENTICATED')
+            ->assertJsonStructure(['error' => ['message'], 'requestId']);
+    }
+
     public function test_login_rejects_missing_or_disabled_users(): void
     {
         $this->seed(DemoSeeder::class);
