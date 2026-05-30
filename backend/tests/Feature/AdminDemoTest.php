@@ -194,6 +194,106 @@ class AdminDemoTest extends TestCase
         ]);
     }
 
+    public function test_store_cannot_upload_attachment_to_other_store_application(): void
+    {
+        Storage::fake('public');
+        $this->seed(DemoSeeder::class);
+
+        $store = $this->user('store001');
+        $otherStoreApplication = Application::query()
+            ->where('application_no', 'A20260530002')
+            ->firstOrFail();
+
+        $this->actingAs($store, 'sanctum')
+            ->postJson('/api/v1/attachments', [
+                'applicationId' => $otherStoreApplication->id,
+                'module' => 'APPLICATION',
+                'file' => UploadedFile::fake()->create('other-store.png', 128, 'image/png'),
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
+
+        $this->assertDatabaseMissing('attachments', [
+            'file_name' => 'other-store.png',
+        ]);
+    }
+
+    public function test_attachment_upload_rejects_invalid_module(): void
+    {
+        Storage::fake('public');
+        $this->seed(DemoSeeder::class);
+
+        $store = $this->user('store001');
+        $application = Application::query()
+            ->where('application_no', 'A20260530001')
+            ->firstOrFail();
+
+        $this->actingAs($store, 'sanctum')
+            ->postJson('/api/v1/attachments', [
+                'applicationId' => $application->id,
+                'module' => 'RANDOM_MODULE',
+                'file' => UploadedFile::fake()->create('customer-id.png', 128, 'image/png'),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR');
+
+        $this->assertDatabaseMissing('attachments', [
+            'module' => 'RANDOM_MODULE',
+        ]);
+    }
+
+    public function test_super_admin_status_change_rejects_mismatched_owner_user(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $admin = $this->user('admin001');
+        $application = Application::query()
+            ->where('application_no', 'A20260530001')
+            ->firstOrFail();
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson("/api/v1/admin/applications/{$application->id}/status", [
+                'status' => ApplicationStatus::PENDING_REVIEW->value,
+                'currentOwnerRole' => UserRole::AUDITOR->value,
+                'currentOwnerUserId' => $this->user('store001')->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR');
+
+        $this->assertDatabaseHas('applications', [
+            'id' => $application->id,
+            'status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
+        ]);
+    }
+
+    public function test_super_admin_terminal_status_requires_empty_owner(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $admin = $this->user('admin001');
+        $application = Application::query()
+            ->where('application_no', 'A20260530001')
+            ->firstOrFail();
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson("/api/v1/admin/applications/{$application->id}/status", [
+                'status' => ApplicationStatus::PAID->value,
+                'currentOwnerRole' => UserRole::AUDITOR->value,
+                'currentOwnerUserId' => $this->user('audit001')->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR');
+
+        $this->assertDatabaseHas('applications', [
+            'id' => $application->id,
+            'status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
+        ]);
+    }
+
     private function user(string $username): User
     {
         return User::query()->where('username', $username)->firstOrFail();
