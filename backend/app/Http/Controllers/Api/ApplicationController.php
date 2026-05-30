@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ApplicationStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AssignSalesRequest;
 use App\Http\Requests\ApplicationStoreRequest;
 use App\Models\Application;
+use App\Models\InspectionTask;
+use App\Models\SalesAgent;
 use App\Models\StatusLog;
 use App\Models\User;
+use App\Services\ApplicationStateService;
+use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +23,10 @@ use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
 {
+    public function __construct(private readonly ApplicationStateService $stateService)
+    {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $applications = $this->visibleApplications($request->user())
@@ -93,6 +102,34 @@ class ApplicationController extends Controller
         return $this->success($request, [
             'items' => $logs,
         ]);
+    }
+
+    public function assign(AssignSalesRequest $request, string $applicationId): JsonResponse
+    {
+        $application = $this->findVisibleApplication($request, $applicationId);
+
+        if (! $application) {
+            return $this->notFound($request);
+        }
+
+        $validated = $request->validated();
+        $salesAgent = SalesAgent::query()->findOrFail($validated['salesAgentId']);
+
+        try {
+            $result = $this->stateService->assign(
+                $application,
+                $salesAgent,
+                $request->user(),
+                $validated['remark'] ?? null,
+            );
+        } catch (DomainException) {
+            return $this->invalidState($request);
+        }
+
+        return $this->success($request, [
+            'application' => $this->serializeApplication($result['application']),
+            'inspectionTask' => $this->serializeInspectionTask($result['task']),
+        ], '已指派业务员到店验机。');
     }
 
     private function visibleApplications(User $user): Builder
@@ -200,6 +237,23 @@ class ApplicationController extends Controller
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeInspectionTask(InspectionTask $task): array
+    {
+        return [
+            'id' => $task->id,
+            'applicationId' => $task->application_id,
+            'salesAgentId' => $task->sales_agent_id,
+            'salesAgentName' => $task->salesAgent?->name,
+            'status' => $task->status,
+            'inspectionNote' => $task->inspection_note,
+            'startedAt' => $task->started_at?->toISOString(),
+            'submittedAt' => $task->submitted_at?->toISOString(),
+        ];
+    }
+
     private function nextApplicationNo(): string
     {
         return 'A'.now()->format('YmdHis').str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
@@ -298,6 +352,11 @@ class ApplicationController extends Controller
     private function notFound(Request $request): JsonResponse
     {
         return $this->error($request, 'APPLICATION_NOT_FOUND', '申请不存在或当前账号不可见。', 404);
+    }
+
+    private function invalidState(Request $request): JsonResponse
+    {
+        return $this->error($request, 'INVALID_STATE_TRANSITION', '当前状态不允许执行该操作。', 409);
     }
 
     private function requestId(Request $request): string

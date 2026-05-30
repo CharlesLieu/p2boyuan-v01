@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ApplicationController;
+use App\Http\Controllers\Api\InspectionTaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => [
@@ -28,4 +29,12 @@ Route::middleware('auth:sanctum')
             ->middleware('role:STORE,SUPER_ADMIN');
         Route::get('/applications/{applicationId}', [ApplicationController::class, 'show']);
         Route::get('/applications/{applicationId}/logs', [ApplicationController::class, 'logs']);
+        Route::post('/applications/{applicationId}/assign', [ApplicationController::class, 'assign'])
+            ->middleware('role:AUDITOR,SUPER_ADMIN');
+        Route::post('/inspection-tasks/{inspectionTaskId}/start', [InspectionTaskController::class, 'start'])
+            ->middleware('role:SALES,SUPER_ADMIN');
+        Route::post('/inspection-tasks/{inspectionTaskId}/submit', [InspectionTaskController::class, 'submit'])
+            ->middleware('role:SALES,SUPER_ADMIN');
+        Route::post('/inspection-tasks/{inspectionTaskId}/reject', [InspectionTaskController::class, 'reject'])
+            ->middleware('role:SALES,SUPER_ADMIN');
     });
