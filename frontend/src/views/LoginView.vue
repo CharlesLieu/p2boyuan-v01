@@ -110,7 +110,6 @@ async function submitLogin() {
             size="large"
             native-type="submit"
             :loading="auth.loading"
-            @click="submitLogin"
           >
             登录进入系统
           </el-button>
