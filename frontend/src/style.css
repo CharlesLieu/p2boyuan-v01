@@ -374,9 +374,6 @@ a {
 
 .role-actions,
 .operation-form,
-.operator-panel,
-.cashier-grid,
-.admin-grid,
 .table-panel,
 .operator-column {
   min-width: 0;
@@ -416,6 +413,23 @@ a {
   display: grid;
   align-content: start;
   gap: 12px;
+}
+
+.agent-option {
+  display: grid;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.agent-option small,
+.field-hint {
+  color: #747b88;
+  font-size: 12px;
+}
+
+.field-hint {
+  margin: -4px 0 0;
+  line-height: 1.5;
 }
 
 .operator-column h3,

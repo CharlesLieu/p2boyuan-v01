@@ -30,8 +30,10 @@ const canSubmitInspection = computed(
     selected.value?.status === 'INSPECTION_IN_PROGRESS' &&
     latestTask.value?.status === 'IN_PROGRESS',
 )
-const canRejectInspection = computed(() =>
-  ['ASSIGNED', 'INSPECTION_IN_PROGRESS'].includes(selected.value?.status ?? ''),
+const canRejectInspection = computed(
+  () =>
+    selected.value?.status === 'INSPECTION_IN_PROGRESS' &&
+    latestTask.value?.status === 'IN_PROGRESS',
 )
 const canSubmitSupplement = computed(
   () =>
@@ -163,6 +165,7 @@ onMounted(() => {
       <el-button type="warning" :icon="Close" :disabled="!canRejectInspection" :loading="operating" @click="rejectTask">
         退回补资料
       </el-button>
+      <span v-if="selected && !canRejectInspection">退回补资料需先开始验机。</span>
       <el-button :disabled="!canSubmitSupplement" :loading="operating" @click="submitSupplement">
         提交补资料
       </el-button>
