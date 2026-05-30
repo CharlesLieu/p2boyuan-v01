@@ -7,8 +7,14 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssignSalesRequest;
 use App\Http\Requests\ApplicationStoreRequest;
+use App\Http\Requests\ReviewDecisionRequest;
+use App\Http\Requests\ReviewSupplementRequest;
+use App\Http\Requests\SupplementSubmitRequest;
 use App\Models\Application;
+use App\Models\Attachment;
 use App\Models\InspectionTask;
+use App\Models\PayoutRecord;
+use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
 use App\Models\StatusLog;
 use App\Models\User;
@@ -19,6 +25,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
@@ -132,6 +139,133 @@ class ApplicationController extends Controller
         ], '已指派业务员到店验机。');
     }
 
+    public function approve(Request $request, string $applicationId): JsonResponse
+    {
+        $application = $this->findVisibleApplication($request, $applicationId);
+
+        if (! $application) {
+            return $this->notFound($request);
+        }
+
+        $validator = Validator::make($request->all(), ReviewDecisionRequest::rulesDefinition());
+
+        if ($validator->fails()) {
+            return $this->validationError($request, '审核意见格式不正确。', $validator->errors()->toArray());
+        }
+
+        try {
+            $result = $this->stateService->approve($application, $request->user(), $validator->validated()['note'] ?? null);
+        } catch (DomainException) {
+            return $this->invalidState($request);
+        }
+
+        return $this->success($request, [
+            'application' => $this->serializeApplication($result['application']),
+            'reviewRecord' => $this->serializeReviewRecord($result['reviewRecord']),
+            'payoutRecord' => $this->serializePayoutRecord($result['payoutRecord']),
+        ], '审核已通过，待出纳打款。');
+    }
+
+    public function reject(Request $request, string $applicationId): JsonResponse
+    {
+        $application = $this->findVisibleApplication($request, $applicationId);
+
+        if (! $application) {
+            return $this->notFound($request);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'note' => ['required', 'string', 'max:4000'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationError($request, '驳回原因不能为空或格式不正确。', $validator->errors()->toArray());
+        }
+
+        try {
+            $result = $this->stateService->rejectReview($application, $request->user(), $validator->validated()['note']);
+        } catch (DomainException) {
+            return $this->invalidState($request);
+        }
+
+        return $this->success($request, [
+            'application' => $this->serializeApplication($result['application']),
+            'reviewRecord' => $this->serializeReviewRecord($result['reviewRecord']),
+        ], '申请已驳回。');
+    }
+
+    public function requestSupplement(Request $request, string $applicationId): JsonResponse
+    {
+        $application = $this->findVisibleApplication($request, $applicationId);
+
+        if (! $application) {
+            return $this->notFound($request);
+        }
+
+        $validator = Validator::make($request->all(), ReviewSupplementRequest::rulesDefinition());
+
+        if ($validator->fails()) {
+            return $this->validationError($request, '补资料要求填写不完整或格式不正确。', $validator->errors()->toArray());
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $result = $this->stateService->requestSupplement(
+                $application,
+                $request->user(),
+                UserRole::from($validated['ownerRole']),
+                $validated['note'],
+            );
+        } catch (DomainException) {
+            return $this->invalidState($request);
+        }
+
+        return $this->success($request, [
+            'application' => $this->serializeApplication($result['application']),
+            'reviewRecord' => $this->serializeReviewRecord($result['reviewRecord']),
+        ], '已要求补充资料。');
+    }
+
+    public function submitSupplement(Request $request, string $applicationId): JsonResponse
+    {
+        $application = $this->findVisibleApplication($request, $applicationId);
+
+        if (! $application) {
+            return $this->notFound($request);
+        }
+
+        if (! $this->canSubmitSupplement($request->user(), $application)) {
+            return $this->forbidden($request);
+        }
+
+        $validator = Validator::make($request->all(), SupplementSubmitRequest::rulesDefinition());
+
+        if ($validator->fails()) {
+            return $this->validationError($request, '补充资料填写不完整或格式不正确。', $validator->errors()->toArray());
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $result = $this->stateService->submitSupplement(
+                $application,
+                $request->user(),
+                $validated['note'],
+                $validated['attachments'] ?? [],
+            );
+        } catch (DomainException) {
+            return $this->invalidState($request);
+        }
+
+        return $this->success($request, [
+            'application' => $this->serializeApplication($result['application']),
+            'attachments' => collect($result['attachments'])
+                ->map(fn (Attachment $attachment) => $this->serializeAttachment($attachment))
+                ->values(),
+        ], '补充资料已提交，等待后台复审。');
+    }
+
     private function visibleApplications(User $user): Builder
     {
         $role = $this->roleValue($user);
@@ -155,6 +289,33 @@ class ApplicationController extends Controller
         return $this->visibleApplications($request->user())
             ->whereKey($applicationId)
             ->first();
+    }
+
+    private function canSubmitSupplement(User $user, Application $application): bool
+    {
+        $role = $this->roleValue($user);
+
+        if ($role === UserRole::SUPER_ADMIN->value) {
+            return true;
+        }
+
+        if (($application->status?->value ?? $application->status) !== ApplicationStatus::NEEDS_SUPPLEMENT->value) {
+            return true;
+        }
+
+        if ($application->current_owner_role === UserRole::STORE->value) {
+            return $role === UserRole::STORE->value && $user->store_id === $application->store_id;
+        }
+
+        if ($application->current_owner_role === UserRole::SALES->value) {
+            return $role === UserRole::SALES->value
+                && $user->sales_agent_id !== null
+                && $application->inspectionTasks()
+                    ->where('sales_agent_id', $user->sales_agent_id)
+                    ->exists();
+        }
+
+        return false;
     }
 
     /**
@@ -254,6 +415,60 @@ class ApplicationController extends Controller
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeReviewRecord(ReviewRecord $record): array
+    {
+        return [
+            'id' => $record->id,
+            'applicationId' => $record->application_id,
+            'reviewerUserId' => $record->reviewer_user_id,
+            'reviewerName' => $record->reviewer?->display_name,
+            'action' => $record->action,
+            'fromStatus' => $record->from_status,
+            'toStatus' => $record->to_status,
+            'note' => $record->note,
+            'createdAt' => $record->created_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializePayoutRecord(PayoutRecord $record): array
+    {
+        return [
+            'id' => $record->id,
+            'applicationId' => $record->application_id,
+            'amount' => (float) $record->amount,
+            'status' => $record->status,
+            'cashierUserId' => $record->cashier_user_id,
+            'voucherAttachmentId' => $record->voucher_attachment_id,
+            'paidAt' => $record->paid_at?->toISOString(),
+            'remark' => $record->remark,
+            'createdAt' => $record->created_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeAttachment(Attachment $attachment): array
+    {
+        return [
+            'id' => $attachment->id,
+            'applicationId' => $attachment->application_id,
+            'module' => $attachment->module,
+            'fileName' => $attachment->file_name,
+            'filePath' => $attachment->file_path,
+            'mimeType' => $attachment->mime_type,
+            'fileSize' => $attachment->file_size,
+            'remark' => $attachment->remark,
+            'createdAt' => $attachment->created_at?->toISOString(),
+        ];
+    }
+
     private function nextApplicationNo(): string
     {
         return 'A'.now()->format('YmdHis').str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
@@ -342,6 +557,22 @@ class ApplicationController extends Controller
             ],
             'requestId' => $this->requestId($request),
         ], $status);
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    private function validationError(Request $request, string $message, array $fields): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'error' => [
+                'code' => 'VALIDATION_ERROR',
+                'message' => $message,
+                'fields' => $fields,
+            ],
+            'requestId' => $this->requestId($request),
+        ], 422);
     }
 
     private function forbidden(Request $request): JsonResponse

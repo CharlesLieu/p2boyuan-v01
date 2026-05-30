@@ -7,6 +7,8 @@ use App\Enums\UserRole;
 use App\Models\Application;
 use App\Models\Attachment;
 use App\Models\InspectionTask;
+use App\Models\PayoutRecord;
+use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
 use App\Models\StatusLog;
 use App\Models\User;
@@ -173,6 +175,211 @@ class ApplicationStateService
         });
     }
 
+    /**
+     * @return array{application: Application, reviewRecord: ReviewRecord, payoutRecord: PayoutRecord}
+     */
+    public function approve(Application $application, User $actor, ?string $note = null): array
+    {
+        return DB::transaction(function () use ($application, $actor, $note): array {
+            $application = Application::query()->lockForUpdate()->findOrFail($application->id);
+            $this->ensureApplicationStatus($application, ApplicationStatus::PENDING_REVIEW);
+
+            $reviewRecord = $this->createReviewRecord(
+                $application,
+                $actor,
+                'APPROVE',
+                ApplicationStatus::PENDING_REVIEW,
+                ApplicationStatus::PENDING_PAYOUT,
+                $note,
+            );
+
+            $payoutRecord = PayoutRecord::query()->create([
+                'application_id' => $application->id,
+                'cashier_user_id' => null,
+                'amount' => $application->loan_amount,
+                'status' => 'PENDING',
+                'remark' => '等待出纳上传凭证并确认。',
+            ]);
+
+            $this->transitionApplication($application, ApplicationStatus::PENDING_PAYOUT, UserRole::CASHIER);
+            $this->log($application, $actor, ApplicationStatus::PENDING_REVIEW, ApplicationStatus::PENDING_PAYOUT, '后台审核通过，进入待放款。', [
+                'action' => 'APPROVE_REVIEW',
+                'reviewRecordId' => $reviewRecord->id,
+                'payoutRecordId' => $payoutRecord->id,
+                'note' => $note,
+            ]);
+
+            return [
+                'application' => $application->fresh(['store', 'payoutRecords.voucherAttachment']),
+                'reviewRecord' => $reviewRecord->fresh(['reviewer']),
+                'payoutRecord' => $payoutRecord->fresh(['application', 'voucherAttachment']),
+            ];
+        });
+    }
+
+    /**
+     * @return array{application: Application, reviewRecord: ReviewRecord}
+     */
+    public function rejectReview(Application $application, User $actor, string $note): array
+    {
+        return DB::transaction(function () use ($application, $actor, $note): array {
+            $application = Application::query()->lockForUpdate()->findOrFail($application->id);
+            $this->ensureApplicationStatus($application, ApplicationStatus::PENDING_REVIEW);
+
+            $reviewRecord = $this->createReviewRecord(
+                $application,
+                $actor,
+                'REJECT',
+                ApplicationStatus::PENDING_REVIEW,
+                ApplicationStatus::REJECTED,
+                $note,
+            );
+
+            $this->transitionApplication($application, ApplicationStatus::REJECTED, UserRole::AUDITOR);
+            $this->log($application, $actor, ApplicationStatus::PENDING_REVIEW, ApplicationStatus::REJECTED, '后台审核驳回申请。', [
+                'action' => 'REJECT_REVIEW',
+                'reviewRecordId' => $reviewRecord->id,
+                'note' => $note,
+            ]);
+
+            return [
+                'application' => $application->fresh(['store']),
+                'reviewRecord' => $reviewRecord->fresh(['reviewer']),
+            ];
+        });
+    }
+
+    /**
+     * @return array{application: Application, reviewRecord: ReviewRecord}
+     */
+    public function requestSupplement(Application $application, User $actor, UserRole $ownerRole, string $note): array
+    {
+        return DB::transaction(function () use ($application, $actor, $ownerRole, $note): array {
+            $application = Application::query()
+                ->with(['inspectionTasks.salesAgent'])
+                ->lockForUpdate()
+                ->findOrFail($application->id);
+            $this->ensureApplicationStatus($application, ApplicationStatus::PENDING_REVIEW);
+
+            $ownerUserId = $ownerRole === UserRole::STORE
+                ? $application->created_by_user_id
+                : $this->firstActiveUserIdForSalesAgent($application->inspectionTasks->sortByDesc('created_at')->first()?->salesAgent);
+
+            $reviewRecord = $this->createReviewRecord(
+                $application,
+                $actor,
+                'REQUEST_SUPPLEMENT',
+                ApplicationStatus::PENDING_REVIEW,
+                ApplicationStatus::NEEDS_SUPPLEMENT,
+                $note,
+            );
+
+            $this->transitionApplication($application, ApplicationStatus::NEEDS_SUPPLEMENT, $ownerRole, $ownerUserId);
+            $this->log($application, $actor, ApplicationStatus::PENDING_REVIEW, ApplicationStatus::NEEDS_SUPPLEMENT, '后台审核要求补充资料。', [
+                'action' => 'REQUEST_SUPPLEMENT',
+                'reviewRecordId' => $reviewRecord->id,
+                'ownerRole' => $ownerRole->value,
+                'note' => $note,
+            ]);
+
+            return [
+                'application' => $application->fresh(['store']),
+                'reviewRecord' => $reviewRecord->fresh(['reviewer']),
+            ];
+        });
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $attachments
+     * @return array{application: Application, attachments: array<int, Attachment>}
+     */
+    public function submitSupplement(Application $application, User $actor, string $note, array $attachments = []): array
+    {
+        return DB::transaction(function () use ($application, $actor, $note, $attachments): array {
+            $application = Application::query()->lockForUpdate()->findOrFail($application->id);
+            $this->ensureApplicationStatus($application, ApplicationStatus::NEEDS_SUPPLEMENT);
+
+            $createdAttachments = collect($attachments)
+                ->map(fn (array $attachment) => Attachment::query()->create([
+                    'application_id' => $application->id,
+                    'uploaded_by_user_id' => $actor->id,
+                    'module' => 'SUPPLEMENT',
+                    'file_name' => $attachment['fileName'],
+                    'file_path' => $attachment['filePath'],
+                    'mime_type' => $attachment['mimeType'] ?? null,
+                    'file_size' => $attachment['fileSize'] ?? 0,
+                    'remark' => $attachment['remark'] ?? null,
+                ]))
+                ->values()
+                ->all();
+
+            $this->transitionApplication($application, ApplicationStatus::PENDING_REVIEW, UserRole::AUDITOR);
+            $this->log($application, $actor, ApplicationStatus::NEEDS_SUPPLEMENT, ApplicationStatus::PENDING_REVIEW, '补充资料已提交，回到后台审核。', [
+                'action' => 'SUBMIT_SUPPLEMENT',
+                'note' => $note,
+                'attachmentCount' => count($createdAttachments),
+            ]);
+
+            return [
+                'application' => $application->fresh(['store']),
+                'attachments' => $createdAttachments,
+            ];
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $voucher
+     * @return array{application: Application, payoutRecord: PayoutRecord, voucher: Attachment}
+     */
+    public function confirmPayout(PayoutRecord $payoutRecord, User $actor, float $amount, array $voucher, ?string $remark = null, mixed $paidAt = null): array
+    {
+        return DB::transaction(function () use ($payoutRecord, $actor, $amount, $voucher, $remark, $paidAt): array {
+            $payoutRecord = PayoutRecord::query()->with('application')->lockForUpdate()->findOrFail($payoutRecord->id);
+            $application = $payoutRecord->application;
+
+            $this->ensureApplicationStatus($application, ApplicationStatus::PENDING_PAYOUT);
+
+            if ($payoutRecord->status !== 'PENDING') {
+                throw new DomainException('当前打款记录状态不允许执行该操作。');
+            }
+
+            $voucherAttachment = Attachment::query()->create([
+                'application_id' => $application->id,
+                'uploaded_by_user_id' => $actor->id,
+                'module' => 'PAYOUT',
+                'file_name' => $voucher['fileName'],
+                'file_path' => $voucher['filePath'],
+                'mime_type' => $voucher['mimeType'] ?? null,
+                'file_size' => $voucher['fileSize'] ?? 0,
+                'remark' => $voucher['remark'] ?? null,
+            ]);
+
+            $payoutRecord->forceFill([
+                'cashier_user_id' => $actor->id,
+                'amount' => $amount,
+                'status' => 'PAID',
+                'voucher_attachment_id' => $voucherAttachment->id,
+                'paid_at' => $paidAt ?: now(),
+                'remark' => $remark,
+            ])->save();
+
+            $this->transitionApplication($application, ApplicationStatus::PAID, UserRole::STORE, $application->created_by_user_id);
+            $this->log($application, $actor, ApplicationStatus::PENDING_PAYOUT, ApplicationStatus::PAID, '出纳确认打款并上传凭证。', [
+                'action' => 'CONFIRM_PAYOUT',
+                'payoutRecordId' => $payoutRecord->id,
+                'voucherAttachmentId' => $voucherAttachment->id,
+                'amount' => $amount,
+                'remark' => $remark,
+            ]);
+
+            return [
+                'application' => $application->fresh(['store']),
+                'payoutRecord' => $payoutRecord->fresh(['application', 'voucherAttachment', 'cashier']),
+                'voucher' => $voucherAttachment,
+            ];
+        });
+    }
+
     private function ensureApplicationStatus(Application $application, ApplicationStatus $expected): void
     {
         $actual = $application->status instanceof ApplicationStatus ? $application->status : ApplicationStatus::from($application->status);
@@ -196,6 +403,18 @@ class ApplicationStateService
             'current_owner_role' => $ownerRole->value,
             'current_owner_user_id' => $ownerUserId,
         ])->save();
+    }
+
+    private function createReviewRecord(Application $application, User $actor, string $action, ApplicationStatus $from, ApplicationStatus $to, ?string $note): ReviewRecord
+    {
+        return ReviewRecord::query()->create([
+            'application_id' => $application->id,
+            'reviewer_user_id' => $actor->id,
+            'action' => $action,
+            'from_status' => $from->value,
+            'to_status' => $to->value,
+            'note' => $note,
+        ]);
     }
 
     /**
