@@ -7,17 +7,12 @@ import ApplicationList from '../../components/application/ApplicationList.vue'
 import {
   approveApplication,
   assignApplication,
-  getApplication,
+  listSalesAgents,
   rejectApplication,
   requestApplicationSupplement,
+  type SalesAgentOption,
 } from '../../api/modules/applications'
 import { useApplicationsStore } from '../../stores/applications'
-
-interface SalesAgentOption {
-  id: string
-  name: string
-  code: string
-}
 
 const applications = useApplicationsStore()
 const operating = ref(false)
@@ -46,48 +41,19 @@ async function discoverSalesAgents() {
   salesAgentsLoading.value = true
 
   try {
-    const details = await Promise.allSettled(
-      applications.items.map((application) => getApplication(application.id)),
-    )
-    const agents = new Map<string, SalesAgentOption>()
+    salesAgentOptions.value = await listSalesAgents()
 
-    details.forEach((result) => {
-      if (result.status !== 'fulfilled') {
-        return
-      }
-
-      result.value.inspectionTasks?.forEach((task) => {
-        if (!task.salesAgentId) {
-          return
-        }
-
-        agents.set(task.salesAgentId, {
-          id: task.salesAgentId,
-          name: task.salesAgentName ?? '业务员',
-          code: demoSalesCode(task.salesAgentName, agents.size),
-        })
-      })
-    })
-
-    salesAgentOptions.value = [...agents.values()]
     if (!salesAgentId.value && salesAgentOptions.value.length > 0) {
       salesAgentId.value = salesAgentOptions.value[0].id
+    } else if (
+      salesAgentId.value &&
+      !salesAgentOptions.value.some((agent) => agent.id === salesAgentId.value)
+    ) {
+      salesAgentId.value = salesAgentOptions.value[0]?.id ?? ''
     }
   } finally {
     salesAgentsLoading.value = false
   }
-}
-
-function demoSalesCode(name: string | null | undefined, index: number) {
-  if (name?.includes('A')) {
-    return 'SALES-001'
-  }
-
-  if (name?.includes('B')) {
-    return 'SALES-002'
-  }
-
-  return `SALES-${String(index + 1).padStart(3, '0')}`
 }
 
 async function runOperation(action: () => Promise<unknown>, message: string) {
@@ -208,7 +174,7 @@ onMounted(() => {
           </el-option>
         </el-select>
         <p class="field-hint">
-          已从演示申请的历史验机任务中自动识别业务员，无需手动输入 UUID。
+          业务员来自后台主数据，派单时会使用真实 salesAgentId。
         </p>
         <el-input v-model="assignRemark" type="textarea" :rows="2" />
         <el-button type="danger" :icon="UserFilled" :disabled="!canAssign" :loading="operating" @click="assignSales">

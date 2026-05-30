@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\InspectionTaskController;
 use App\Http\Controllers\Api\PayoutController;
+use App\Http\Controllers\Api\SalesAgentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => [
@@ -32,6 +33,8 @@ Route::middleware('auth:sanctum')
             ->middleware('role:STORE,SUPER_ADMIN');
         Route::get('/applications/{applicationId}', [ApplicationController::class, 'show']);
         Route::get('/applications/{applicationId}/logs', [ApplicationController::class, 'logs']);
+        Route::get('/sales-agents', [SalesAgentController::class, 'index'])
+            ->middleware('role:AUDITOR,SUPER_ADMIN');
         Route::post('/applications/{applicationId}/assign', [ApplicationController::class, 'assign'])
             ->middleware('role:AUDITOR,SUPER_ADMIN');
         Route::post('/applications/{applicationId}/approve', [ApplicationController::class, 'approve'])

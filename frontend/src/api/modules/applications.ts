@@ -108,6 +108,14 @@ export interface DemoAccount {
   lastLoginAt: string | null
 }
 
+export interface SalesAgentOption {
+  id: string
+  code: string
+  name: string
+  phone: string | null
+  status: string
+}
+
 export interface ApplicationItem {
   id: string
   applicationNo: string
@@ -174,6 +182,12 @@ export async function getApplicationLogs(applicationId: string) {
   const response = await apiClient.get<ApiEnvelope<{ items: ApplicationLog[] }>>(
     `/applications/${applicationId}/logs`,
   )
+
+  return response.data.data.items
+}
+
+export async function listSalesAgents() {
+  const response = await apiClient.get<ApiEnvelope<{ items: SalesAgentOption[] }>>('/sales-agents')
 
   return response.data.data.items
 }
