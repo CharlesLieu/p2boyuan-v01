@@ -1,13 +1,43 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { DataBoard, Finished, Money, Tickets } from '@element-plus/icons-vue'
+import ApplicationDetail from '../components/application/ApplicationDetail.vue'
+import ApplicationList from '../components/application/ApplicationList.vue'
+import { useApplicationsStore } from '../stores/applications'
 
 const route = useRoute()
+const applications = useApplicationsStore()
 
 const title = computed(() => String(route.meta.title ?? '工作台'))
 const badge = computed(() => String(route.meta.badge ?? '彩排节点'))
 const primaryAction = computed(() => String(route.meta.primaryAction ?? '继续处理'))
+const pendingCount = computed(
+  () =>
+    applications.items.filter((item) =>
+      [
+        'PENDING_ASSIGNMENT',
+        'ASSIGNED',
+        'INSPECTION_IN_PROGRESS',
+        'PENDING_REVIEW',
+        'NEEDS_SUPPLEMENT',
+        'PENDING_PAYOUT',
+      ].includes(item.status),
+    ).length,
+)
+const paidAmount = computed(() =>
+  applications.items
+    .filter((item) => ['PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(item.status))
+    .reduce((total, item) => total + Number(item.loanAmount ?? 0), 0),
+)
+
+function money(value: number) {
+  return `￥${value.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`
+}
+
+onMounted(() => {
+  applications.fetch()
+})
 </script>
 
 <template>
@@ -16,26 +46,26 @@ const primaryAction = computed(() => String(route.meta.primaryAction ?? '继续�
       <div>
         <el-tag type="danger" effect="plain">{{ badge }}</el-tag>
         <h2>{{ title }}</h2>
-        <p>这里已经接入真实登录与角色路由，下一步会继续接申请、派单、审核、打款等业务接口。</p>
+        <p>围绕申请、验机、审核、补资料、打款凭证建立同一套彩排数据，方便不同角色远程联动测试。</p>
       </div>
-      <el-button type="danger" size="large">{{ primaryAction }}</el-button>
+      <el-button type="danger" size="large" @click="applications.fetch()">{{ primaryAction }}</el-button>
     </div>
 
     <div class="summary-grid">
       <article>
         <el-icon><Tickets /></el-icon>
         <strong>待处理</strong>
-        <span>3 单</span>
+        <span>{{ pendingCount }} 单</span>
       </article>
       <article>
         <el-icon><Finished /></el-icon>
-        <strong>今日完成</strong>
-        <span>8 单</span>
+        <strong>可见申请</strong>
+        <span>{{ applications.items.length }} 单</span>
       </article>
       <article>
         <el-icon><Money /></el-icon>
-        <strong>待放款</strong>
-        <span>￥21,450</span>
+        <strong>放款相关</strong>
+        <span>{{ money(paidAmount) }}</span>
       </article>
       <article>
         <el-icon><DataBoard /></el-icon>
@@ -44,18 +74,22 @@ const primaryAction = computed(() => String(route.meta.primaryAction ?? '继续�
       </article>
     </div>
 
-    <div class="placeholder-board">
-      <div class="board-toolbar">
-        <h3>流程彩排看板</h3>
-        <el-tag>占位页面</el-tag>
-      </div>
-      <div class="flow-lanes">
-        <div>提交申请</div>
-        <div>指派验机</div>
-        <div>审核资料</div>
-        <div>确认打款</div>
-        <div>推送凭证</div>
-      </div>
+    <el-alert v-if="applications.error" type="error" :title="applications.error" show-icon />
+
+    <div class="application-workbench">
+      <ApplicationList
+        :applications="applications.items"
+        :loading="applications.loading"
+        :selected-id="applications.selectedId"
+        @select="applications.select"
+      />
+      <ApplicationDetail
+        :application="applications.selected"
+        :loading="applications.detailLoading"
+        :logs="applications.logs"
+        :logs-loading="applications.logsLoading"
+        @load-logs="applications.loadLogs()"
+      />
     </div>
   </section>
 </template>

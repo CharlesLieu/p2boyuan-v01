@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import AppShell from '../views/AppShell.vue'
+import AppShell from '../components/layout/AppShell.vue'
 import LoginView from '../views/LoginView.vue'
 import WorkspaceView from '../views/WorkspaceView.vue'
 import { useAuthStore, type UserRole } from '../stores/auth'
