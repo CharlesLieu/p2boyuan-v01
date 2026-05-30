@@ -1,0 +1,366 @@
+:root {
+  --by-bg: #f2f5f8;
+  --by-bg-soft: #f8fafc;
+  --by-panel: #ffffff;
+  --by-ink: #111827;
+  --by-muted: #657184;
+  --by-line: #d9e2ec;
+  --by-red: #d71920;
+  --by-red-deep: #aa1017;
+  --by-navy: #101827;
+  --by-green: #157347;
+  --by-amber: #a16207;
+  --by-shadow: 0 14px 34px rgba(16, 24, 39, 0.11);
+  --by-shadow-soft: 0 8px 20px rgba(16, 24, 39, 0.06);
+  --by-radius: 8px;
+  --el-color-primary: var(--by-red);
+  --el-color-danger: var(--by-red);
+  --el-color-warning: var(--by-amber);
+  --el-color-success: var(--by-green);
+  --el-border-radius-base: var(--by-radius);
+  --el-border-color: var(--by-line);
+  --el-text-color-primary: var(--by-ink);
+  --el-text-color-regular: #374151;
+}
+
+body {
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(215, 25, 32, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fafc, var(--by-bg));
+}
+
+.el-button {
+  min-height: 38px;
+  border-radius: var(--by-radius);
+  font-weight: 700;
+  white-space: normal;
+}
+
+.el-button--danger {
+  --el-button-bg-color: var(--by-red);
+  --el-button-border-color: var(--by-red);
+  --el-button-hover-bg-color: var(--by-red-deep);
+  --el-button-hover-border-color: var(--by-red-deep);
+}
+
+.el-button.is-plain:not(.el-button--danger) {
+  background: #fff;
+}
+
+.el-input,
+.el-select,
+.el-input-number,
+.el-date-editor.el-input,
+.el-textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  border-radius: var(--by-radius);
+  box-shadow: 0 0 0 1px var(--by-line) inset;
+}
+
+.el-tag {
+  max-width: 100%;
+  border-radius: 999px;
+  white-space: normal;
+}
+
+.el-table {
+  border-radius: var(--by-radius);
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  background: #f3f6fa;
+  color: #374151;
+}
+
+.el-dialog,
+.el-drawer {
+  border-radius: var(--by-radius);
+}
+
+.app-shell {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(215, 25, 32, 0.08), transparent 26%),
+    linear-gradient(180deg, #f8fafc, var(--by-bg));
+}
+
+.shell-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: linear-gradient(180deg, #101827 0%, #151d2b 100%);
+  box-shadow: 10px 0 30px rgba(16, 24, 39, 0.12);
+}
+
+.brand-mark {
+  background: linear-gradient(135deg, var(--by-red), #ff6469);
+  box-shadow: 0 14px 28px rgba(215, 25, 32, 0.25);
+}
+
+.shell-nav a {
+  border: 1px solid transparent;
+}
+
+.shell-nav a.active {
+  background: #fff;
+  color: var(--by-ink);
+  font-weight: 800;
+}
+
+.shell-nav a:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.shell-main {
+  min-width: 0;
+}
+
+.shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  border-color: var(--by-line);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 22px rgba(16, 24, 39, 0.05);
+}
+
+.workspace-page {
+  max-width: 1480px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.workspace-hero {
+  overflow: hidden;
+  border-color: rgba(16, 24, 39, 0.1);
+  background:
+    linear-gradient(135deg, rgba(16, 24, 39, 0.98), rgba(23, 36, 58, 0.96) 58%, rgba(215, 25, 32, 0.26)),
+    #101827;
+  color: #fff;
+  box-shadow: var(--by-shadow);
+}
+
+.workspace-hero h2,
+.workspace-hero p,
+.workspace-hero .el-tag {
+  color: inherit;
+}
+
+.workspace-hero p {
+  color: #cbd5e1;
+}
+
+.workspace-hero .el-tag {
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.workspace-hero .el-button.is-plain {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.summary-grid article,
+.application-list,
+.application-detail,
+.role-actions,
+.operation-form,
+.operator-column,
+.table-panel {
+  border-color: var(--by-line);
+  border-radius: var(--by-radius);
+  background: var(--by-panel);
+  box-shadow: var(--by-shadow-soft);
+}
+
+.summary-grid article {
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-grid article::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--by-red);
+}
+
+.summary-grid strong,
+.role-actions span,
+.field-hint,
+.application-row small,
+dt {
+  color: var(--by-muted);
+}
+
+.summary-grid span,
+.operator-column h3,
+.panel-heading h3 {
+  color: var(--by-ink);
+}
+
+.application-workbench {
+  min-width: 0;
+}
+
+.role-mobile .application-workbench {
+  grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.18fr);
+}
+
+.role-desktop .application-workbench {
+  grid-template-columns: minmax(480px, 1fr) minmax(0, 1fr);
+}
+
+.role-mobile .application-list,
+.role-mobile .application-detail {
+  border-radius: var(--by-radius);
+}
+
+.role-mobile .application-row {
+  min-height: 88px;
+  background: #fff;
+}
+
+.role-mobile .operation-form {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.operator-panel,
+.cashier-grid,
+.admin-grid {
+  align-items: stretch;
+}
+
+.operator-column,
+.table-panel {
+  min-height: 100%;
+}
+
+.button-row .el-button,
+.hero-actions .el-button,
+.role-actions .el-button {
+  flex: 0 1 auto;
+}
+
+.inline-fields {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.drawer-form {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .role-mobile .application-workbench,
+  .role-desktop .application-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .role-mobile .operation-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .shell-sidebar {
+    position: static;
+    height: auto;
+    box-shadow: none;
+  }
+
+  .shell-nav {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .shell-main {
+    padding: 16px;
+  }
+
+  .shell-header {
+    position: static;
+  }
+
+  .workspace-hero {
+    padding: 20px;
+  }
+
+  .workspace-hero h2 {
+    font-size: 26px;
+  }
+
+  .role-actions,
+  .hero-actions,
+  .button-row {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .login-page {
+    padding: 14px;
+  }
+
+  .login-panel,
+  .workspace-hero,
+  .shell-header,
+  .summary-grid article,
+  .application-list,
+  .application-detail,
+  .role-actions,
+  .operation-form,
+  .operator-column,
+  .table-panel {
+    padding: 14px;
+  }
+
+  .shell-main {
+    padding: 12px;
+  }
+
+  .workspace-page {
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .workspace-hero h2 {
+    font-size: 24px;
+  }
+
+  .summary-grid span {
+    font-size: 22px;
+    overflow-wrap: anywhere;
+  }
+
+  .user-panel,
+  .hero-actions,
+  .role-actions,
+  .button-row {
+    align-items: stretch;
+  }
+
+  .hero-actions .el-button,
+  .role-actions .el-button,
+  .button-row .el-button,
+  .user-panel .el-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .el-dialog {
+    width: calc(100vw - 24px) !important;
+  }
+
+  .el-drawer {
+    width: calc(100vw - 24px) !important;
+  }
+}

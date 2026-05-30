@@ -132,7 +132,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="workspace-page">
+  <section class="workspace-page role-desktop">
     <div class="workspace-hero">
       <div>
         <el-tag type="danger" effect="plain">派单审核</el-tag>

@@ -136,7 +136,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="workspace-page">
+  <section class="workspace-page role-mobile">
     <div class="workspace-hero">
       <div>
         <el-tag type="danger" effect="plain">到店验机</el-tag>
