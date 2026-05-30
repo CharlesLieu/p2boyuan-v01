@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import StatusBadge from './StatusBadge.vue'
-import type { ApplicationItem, ApplicationLog } from '../../api/modules/applications'
+import type {
+  ApplicationItem,
+  ApplicationLog,
+  AttachmentInfo,
+} from '../../api/modules/applications'
 
 const props = defineProps<{
   application: ApplicationItem | null
@@ -16,6 +20,86 @@ const emit = defineEmits<{
 
 const latestInspection = computed(() => props.application?.inspectionTasks?.[0] ?? null)
 const latestPayout = computed(() => props.application?.payoutRecords?.[0] ?? null)
+const latestReview = computed(() => {
+  const records = props.application?.reviewRecords ?? []
+
+  return [...records].sort(compareCreatedAtDesc)[0] ?? null
+})
+const latestReviewLog = computed(() => {
+  const reviewActions = ['APPROVE', 'REJECT', 'REQUEST_SUPPLEMENT', 'SUBMIT_SUPPLEMENT']
+
+  return [...props.logs]
+    .filter((log) => reviewActions.some((action) => String(log.action ?? '').includes(action)))
+    .sort(compareCreatedAtDesc)[0] ?? null
+})
+const reviewDisplay = computed(() => {
+  const record = latestReview.value
+
+  if (record) {
+    return {
+      action: reviewActionText(record.action),
+      result: statusTransition(record.fromStatus, record.toStatus),
+      note: text(record.note, '本次审核未填写备注。'),
+      actor: text(record.reviewerName, '审核员'),
+      time: dateText(record.createdAt),
+    }
+  }
+
+  const log = latestReviewLog.value
+
+  if (log) {
+    return {
+      action: reviewActionText(log.action),
+      result: statusTransition(log.fromStatus, log.toStatus),
+      note: reviewNoteFromLog(log),
+      actor: text(log.actorName, '系统'),
+      time: dateText(log.createdAt),
+    }
+  }
+
+  return null
+})
+const supplementOrRejectReason = computed(() => {
+  const records = [...(props.application?.reviewRecords ?? [])].sort(compareCreatedAtDesc)
+  const record = records.find((item) => {
+    const action = String(item.action ?? '')
+    return action.includes('REJECT') || action.includes('SUPPLEMENT')
+  })
+
+  if (record) {
+    return text(record.note, '未填写具体原因。')
+  }
+
+  const log = [...props.logs].sort(compareCreatedAtDesc).find((item) => {
+    const action = String(item.action ?? '')
+    const status = String(item.toStatus ?? '')
+    return action.includes('REJECT') || action.includes('SUPPLEMENT') || status === 'NEEDS_SUPPLEMENT'
+  })
+
+  if (log) {
+    return reviewNoteFromLog(log)
+  }
+
+  return '暂无驳回或补资料原因记录。'
+})
+const payoutVoucher = computed(() => {
+  const payout = latestPayout.value
+  const attachment = payout?.voucherAttachment ?? payout?.voucher ?? null
+
+  if (attachment) {
+    return attachment
+  }
+
+  if (payout?.voucherAttachmentId) {
+    return {
+      id: payout.voucherAttachmentId,
+      fileName: null,
+      filePath: null,
+    } satisfies AttachmentInfo
+  }
+
+  return null
+})
 
 function money(value: number | string | null | undefined) {
   return `￥${Number(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`
@@ -36,6 +120,53 @@ function dateText(value: string | null | undefined) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function compareCreatedAtDesc(
+  left: { createdAt?: string | null },
+  right: { createdAt?: string | null },
+) {
+  return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime()
+}
+
+function statusTransition(fromStatus: string | null | undefined, toStatus: string | null | undefined) {
+  if (!fromStatus && !toStatus) {
+    return '未记录状态变化'
+  }
+
+  if (!fromStatus) {
+    return text(toStatus)
+  }
+
+  return `${fromStatus} → ${text(toStatus)}`
+}
+
+function reviewActionText(action: string | null | undefined) {
+  const actionText: Record<string, string> = {
+    APPROVE: '审核通过',
+    REJECT: '审核驳回',
+    REQUEST_SUPPLEMENT: '要求补充资料',
+    SUBMIT_SUPPLEMENT: '提交补充资料',
+  }
+
+  return actionText[String(action ?? '')] ?? text(action, '暂无审核记录')
+}
+
+function reviewNoteFromLog(log: ApplicationLog) {
+  const metadata = log.metadata ?? {}
+  const note =
+    metadata.note ??
+    metadata.remark ??
+    metadata.reason ??
+    metadata.reviewNote ??
+    metadata.supplementNote ??
+    log.message
+
+  return text(note, '未填写具体原因。')
+}
+
+function voucherTitle(attachment: AttachmentInfo) {
+  return attachment.fileName || `凭证附件 ID：${attachment.id}`
 }
 </script>
 
@@ -119,10 +250,37 @@ function dateText(value: string | null | undefined) {
             <dd>{{ text(latestInspection?.inspectionNote) }}</dd>
             <dt>提交验机</dt>
             <dd>{{ dateText(latestInspection?.submittedAt) }}</dd>
+            <dt>审核动作</dt>
+            <dd>{{ text(reviewDisplay?.action, '暂无审核记录') }}</dd>
+            <dt>审核结果</dt>
+            <dd>{{ text(reviewDisplay?.result, '暂无审核结果') }}</dd>
+            <dt>审核意见</dt>
+            <dd>{{ text(reviewDisplay?.note, '暂无审核意见') }}</dd>
+            <dt>审核人</dt>
+            <dd>{{ text(reviewDisplay?.actor, '未记录') }} / {{ text(reviewDisplay?.time, '未记录') }}</dd>
+            <dt>驳回/补资料</dt>
+            <dd>{{ supplementOrRejectReason }}</dd>
             <dt>打款状态</dt>
             <dd>{{ text(latestPayout?.status) }}</dd>
             <dt>打款时间</dt>
             <dd>{{ dateText(latestPayout?.paidAt) }}</dd>
+            <dt>打款备注</dt>
+            <dd>{{ text(latestPayout?.remark) }}</dd>
+            <dt>打款凭证</dt>
+            <dd>
+              <template v-if="payoutVoucher">
+                <a
+                  v-if="payoutVoucher.filePath"
+                  :href="payoutVoucher.filePath"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {{ voucherTitle(payoutVoucher) }}
+                </a>
+                <span v-else>{{ voucherTitle(payoutVoucher) }}</span>
+              </template>
+              <span v-else>暂无打款凭证记录</span>
+            </dd>
           </dl>
         </section>
       </div>

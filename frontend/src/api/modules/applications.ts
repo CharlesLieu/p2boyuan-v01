@@ -24,12 +24,41 @@ export interface InspectionTask {
   submittedAt: string | null
 }
 
+export interface AttachmentInfo {
+  id: string
+  applicationId?: string | null
+  module?: string | null
+  fileName?: string | null
+  filePath?: string | null
+  mimeType?: string | null
+  fileSize?: number | null
+  remark?: string | null
+  createdAt?: string | null
+}
+
+export interface ReviewRecord {
+  id: string
+  applicationId?: string | null
+  reviewerUserId?: string | null
+  reviewerName?: string | null
+  action: string | null
+  fromStatus?: ApplicationStatus | null
+  toStatus?: ApplicationStatus | null
+  note?: string | null
+  createdAt?: string | null
+}
+
 export interface PayoutRecord {
   id: string
   amount: number
   status: string
+  cashierUserId?: string | null
+  voucherAttachmentId?: string | null
+  voucherAttachment?: AttachmentInfo | null
+  voucher?: AttachmentInfo | null
   paidAt: string | null
   remark: string | null
+  createdAt?: string | null
 }
 
 export interface ApplicationItem {
@@ -60,6 +89,7 @@ export interface ApplicationItem {
   createdAt: string | null
   updatedAt: string | null
   inspectionTasks?: InspectionTask[]
+  reviewRecords?: ReviewRecord[]
   payoutRecords?: PayoutRecord[]
 }
 
