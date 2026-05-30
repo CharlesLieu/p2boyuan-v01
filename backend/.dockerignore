@@ -1,4 +1,7 @@
 .env
+.env.*
+!.env.example
+!.env.docker.example
 .phpunit.result.cache
 Dockerfile
 node_modules
