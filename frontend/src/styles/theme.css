@@ -284,6 +284,12 @@ dt {
   line-height: 1.5;
 }
 
+.amount-limit {
+  margin: -4px 0 0;
+  color: var(--by-muted);
+  font-size: 13px;
+}
+
 .voucher-preview {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);

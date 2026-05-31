@@ -67,7 +67,13 @@ class PayoutController extends Controller
                 $validated['remark'] ?? null,
                 $validated['paidAt'] ?? null,
             );
-        } catch (DomainException) {
+        } catch (DomainException $exception) {
+            if ($exception->getMessage() === '打款金额不能超过申请贷款金额。') {
+                return $this->validationError($request, $exception->getMessage(), [
+                    'amount' => [$exception->getMessage()],
+                ]);
+            }
+
             return $this->invalidState($request);
         }
 

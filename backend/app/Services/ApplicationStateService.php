@@ -343,6 +343,10 @@ class ApplicationStateService
                 throw new DomainException('当前打款记录状态不允许执行该操作。');
             }
 
+            if ($amount > (float) $application->loan_amount) {
+                throw new DomainException('打款金额不能超过申请贷款金额。');
+            }
+
             $voucherAttachment = Attachment::query()->create([
                 'application_id' => $application->id,
                 'uploaded_by_user_id' => $actor->id,

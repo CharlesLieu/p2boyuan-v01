@@ -38,6 +38,7 @@ const form = reactive({
 const selectedPayout = computed(
   () => payouts.value.find((payout) => payout.id === selectedPayoutId.value) ?? null,
 )
+const selectedPayoutAmount = computed(() => Number(selectedPayout.value?.amount ?? 0))
 const pendingPayouts = computed(() => payouts.value.filter((payout) => payout.status === 'PENDING'))
 const paidAmount = computed(() =>
   payouts.value
@@ -79,6 +80,12 @@ async function confirmSelectedPayout() {
 
   if (!voucherAttachment.value) {
     ElMessage.warning('请先上传打款凭证。')
+    return
+  }
+
+  if (Number(form.amount) > selectedPayoutAmount.value) {
+    ElMessage.warning(`打款金额不能超过申请贷款金额 ${money(selectedPayoutAmount.value)}。`)
+    form.amount = selectedPayoutAmount.value
     return
   }
 
@@ -250,7 +257,8 @@ onMounted(() => {
 
       <div class="operator-column">
         <h3>确认打款</h3>
-        <el-input-number v-model="form.amount" :min="0" />
+        <el-input-number v-model="form.amount" :min="0" :max="selectedPayoutAmount" />
+        <p class="amount-limit">最高可打款：{{ money(selectedPayoutAmount) }}</p>
         <el-date-picker v-model="form.paidAt" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
         <div class="voucher-uploader">
           <input

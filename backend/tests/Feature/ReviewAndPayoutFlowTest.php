@@ -228,6 +228,35 @@ class ReviewAndPayoutFlowTest extends TestCase
             ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
     }
 
+    public function test_payout_cannot_be_confirmed_above_application_loan_amount(): void
+    {
+        $this->seed(DemoSeeder::class);
+
+        $cashier = User::query()->where('username', 'cashier001')->firstOrFail();
+        $payout = PayoutRecord::query()
+            ->whereHas('application', fn ($query) => $query->where('application_no', 'A20260530007'))
+            ->firstOrFail();
+        $overLimitAmount = (float) $payout->application->loan_amount + 1;
+
+        $this->actingAs($cashier, 'sanctum')
+            ->postJson("/api/v1/payouts/{$payout->id}/confirm", [
+                'amount' => $overLimitAmount,
+                'voucher' => [
+                    'fileName' => 'over-limit.png',
+                    'filePath' => 'demo/payout/over-limit.png',
+                ],
+                'remark' => '超过贷款金额的打款应被拒绝。',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR');
+
+        $this->assertDatabaseHas('payout_records', [
+            'id' => $payout->id,
+            'status' => 'PENDING',
+        ]);
+    }
+
     public function test_payout_cannot_be_confirmed_twice(): void
     {
         $this->seed(DemoSeeder::class);
