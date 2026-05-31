@@ -103,6 +103,83 @@ npm run dev -- --host 0.0.0.0
 
 Open `http://localhost:5173`.
 
+## Fast Remote Demo Deployment
+
+Use this path when you want a tester-accessible rehearsal demo on a fresh Ubuntu server with Docker Compose. The flow is: buy a server, upload this repository to GitHub, clone it on the server, copy env files, fill passwords and `APP_KEY`, start Docker Compose, initialize demo data, and share the server URL with testers.
+
+### 1. Buy and prepare a server
+
+Minimum recommendation:
+
+- Ubuntu 22.04 LTS or Ubuntu 24.04 LTS
+- 2 CPU cores and 4 GB RAM
+- Public IPv4 address
+- Port `80` open in the cloud security group and server firewall
+
+Log in with SSH, then install Docker:
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl git
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker
+docker --version
+docker compose version
+```
+
+### 2. Upload and clone from GitHub
+
+Push this project to your own GitHub repository, then clone it on the server:
+
+```bash
+git clone <YOUR_GITHUB_REPO_URL>
+cd p2boyuan-v01
+cp .env.deploy.example .env
+cp backend/.env.docker.example backend/.env.docker
+```
+
+### 3. Fill production demo values
+
+Generate a Laravel `APP_KEY` without needing local PHP, Composer, or backend `vendor` dependencies:
+
+```bash
+docker run --rm php:8.4-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+```
+
+Edit the root `.env` file:
+
+- Set `APP_URL=http://YOUR_SERVER_IP`
+- Set `FRONTEND_URL=http://YOUR_SERVER_IP`
+- Replace `MYSQL_PASSWORD=change_me_mysql_password`
+- Replace `MYSQL_ROOT_PASSWORD=change_me_root_password`
+- Paste the generated key into `BACKEND_APP_KEY=base64:...`
+
+Keep `backend/.env.docker` copied from `backend/.env.docker.example`; it reads these values from Docker Compose.
+
+### 4. Start and initialize the demo
+
+Run:
+
+```bash
+./scripts/deploy-server.sh
+./scripts/init-demo.sh
+```
+
+Open:
+
+```text
+http://YOUR_SERVER_IP
+```
+
+Share this URL with testers after you confirm the smoke test in `deploy/production-checklist.md`.
+
+### 5. Demo safety notes
+
+All seeded demo accounts use the weak password `123456`. This is acceptable only for rehearsal and short-lived testing. Before any public production use, change all demo passwords, enable HTTPS with a real domain, restrict firewall access where possible, and use strong MySQL/root passwords.
+
+This Docker deployment task does not add, modify, or delete API endpoints or database tables. The API Word document and database Word document do not need synchronization for this documentation-only change.
+
 ## Environment Variables
 
 ### Backend
@@ -205,11 +282,12 @@ git diff --check
 
 ## Deployment Files
 
-- `deploy/nginx.conf`: example Nginx configuration for serving the Vue build and forwarding Laravel API traffic.
+- `docker/nginx/default.conf`: Nginx configuration used by Docker demo deployments.
+- `deploy/nginx.conf`: reference Nginx configuration for manual Linux/Nginx/PHP-FPM deployments.
 - `deploy/production-checklist.md`: step-by-step production checklist.
 
-Server paths, domain names, PHP-FPM socket names, and TLS certificate paths must be adjusted for the target server.
+For manual deployments, server paths, domain names, PHP-FPM socket names, and TLS certificate paths must be adjusted for the target server.
 
 ## API And Data Table Documents
 
-Task 13 only adds packaging and deployment documentation. It does not add, modify, or delete API endpoints, request/response contracts, database tables, columns, indexes, or migrations. Therefore the v0.1 API interface document and data table design document do not need synchronization for this task.
+Task 6 only adds deployment documentation. It does not add, modify, or delete API endpoints, request/response contracts, database tables, columns, indexes, or migrations. Therefore the v0.1 API interface document and data table design document do not need synchronization for this task.
