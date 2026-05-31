@@ -90,6 +90,13 @@ export interface AttachmentPayload {
   remark?: string | null
 }
 
+export interface UploadAttachmentPayload {
+  applicationId: string
+  module: 'APPLICATION' | 'INSPECTION' | 'SUPPLEMENT' | 'PAYOUT' | 'VOUCHER' | 'OTHER'
+  file: File
+  remark?: string | null
+}
+
 export interface DemoAccount {
   id: number
   username: string
@@ -286,6 +293,24 @@ export async function rejectInspectionTask(inspectionTaskId: string, reason: str
   )
 
   return response.data.data.application
+}
+
+export async function uploadAttachment(payload: UploadAttachmentPayload) {
+  const formData = new FormData()
+  formData.append('applicationId', payload.applicationId)
+  formData.append('module', payload.module)
+  formData.append('file', payload.file)
+
+  if (payload.remark) {
+    formData.append('remark', payload.remark)
+  }
+
+  const response = await apiClient.post<ApiEnvelope<{ attachment: AttachmentInfo }>>(
+    '/attachments',
+    formData,
+  )
+
+  return response.data.data.attachment
 }
 
 export async function listPayouts(limit = 50) {

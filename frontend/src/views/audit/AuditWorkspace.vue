@@ -159,7 +159,7 @@ onMounted(() => {
           :loading="salesAgentsLoading"
           filterable
           placeholder="选择业务员"
-          no-data-text="暂无可用业务员，请先重置演示数据"
+          no-data-text="暂无可用业务员，请先重置测试数据"
         >
           <el-option
             v-for="agent in salesAgentOptions"

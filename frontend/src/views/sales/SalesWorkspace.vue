@@ -81,7 +81,7 @@ function submitTask() {
               fileName: 'inspection-front.png',
               filePath: '/demo/inspection-front.png',
               mimeType: 'image/png',
-              remark: '验机正面照片占位。',
+              remark: '验机正面照片。',
             },
           ],
         }),
@@ -140,8 +140,8 @@ onMounted(() => {
     <div class="workspace-hero">
       <div>
         <el-tag type="danger" effect="plain">到店验机</el-tag>
-        <h2>业务员工作台</h2>
-        <p>业务员处理被指派的验机任务，提交检测结论，也可在补资料轮到自己时补充现场资料。</p>
+        <h2>验机任务</h2>
+        <p>处理被指派的到店验机任务，提交检测结论，并在需要时补充现场资料。</p>
       </div>
       <el-button :icon="Refresh" plain @click="refresh()">刷新</el-button>
     </div>

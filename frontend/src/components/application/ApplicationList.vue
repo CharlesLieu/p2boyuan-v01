@@ -27,6 +27,22 @@ function ownerLabel(application: ApplicationItem) {
 
   return application.currentOwnerRole ? roleMap[application.currentOwnerRole] : '无'
 }
+
+function nextAction(application: ApplicationItem) {
+  const actionMap: Partial<Record<ApplicationItem['status'], string>> = {
+    PENDING_ASSIGNMENT: '等待派单',
+    ASSIGNED: '开始验机',
+    INSPECTION_IN_PROGRESS: '提交验机',
+    PENDING_REVIEW: '等待审核',
+    NEEDS_SUPPLEMENT: '补充资料',
+    PENDING_PAYOUT: '确认打款',
+    PAID: '查看凭证',
+    REJECTED: '已驳回',
+    COMPLETED: '已完成',
+  }
+
+  return actionMap[application.status] ?? '查看详情'
+}
 </script>
 
 <template>
@@ -68,6 +84,7 @@ function ownerLabel(application: ApplicationItem) {
           <StatusBadge :status="application.status" />
           <small>{{ ownerLabel(application) }}</small>
         </span>
+        <span class="row-next">{{ nextAction(application) }}</span>
       </button>
     </div>
   </section>
@@ -113,7 +130,7 @@ function ownerLabel(application: ApplicationItem) {
 
 .application-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.35fr) minmax(150px, 1.1fr) minmax(108px, 0.72fr) 116px;
+  grid-template-columns: minmax(150px, 1.35fr) minmax(150px, 1.1fr) minmax(108px, 0.72fr) 116px 96px;
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -160,6 +177,18 @@ function ownerLabel(application: ApplicationItem) {
   justify-items: end;
 }
 
+.row-next {
+  display: inline-grid;
+  place-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #fff1f1;
+  color: #b91720;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 @media (max-width: 1180px) {
   .application-row {
     grid-template-columns: 1fr 1fr;
@@ -171,8 +200,43 @@ function ownerLabel(application: ApplicationItem) {
 }
 
 @media (max-width: 720px) {
+  .application-list {
+    padding: 14px;
+  }
+
   .application-row {
-    grid-template-columns: 1fr;
+    position: relative;
+    grid-template-columns: 1fr auto;
+    gap: 10px 12px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .row-main,
+  .row-device,
+  .row-money {
+    grid-column: 1 / -1;
+  }
+
+  .row-status {
+    justify-items: start;
+  }
+
+  .row-next {
+    align-self: center;
+  }
+
+  .row-main strong {
+    font-size: 15px;
+  }
+
+  .row-device strong {
+    font-size: 16px;
+  }
+
+  .row-money strong {
+    color: #b91720;
+    font-size: 18px;
   }
 }
 </style>

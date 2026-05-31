@@ -54,10 +54,10 @@ async function submitLogin() {
   <main class="login-page">
     <section class="login-hero">
       <div class="hero-copy">
-        <p class="eyebrow">v0.1 远程彩排版 MVP</p>
-        <h1>把回收金融流程跑通给领导看</h1>
+        <p class="eyebrow">v0.1 业务测试版</p>
+        <h1>回收金融业务流程系统</h1>
         <p class="hero-subtitle">
-          店家、业务员、审核、出纳、超级管理员五个角色使用同一套演示数据，完整彩排从申请到打款凭证推送的业务闭环。
+          店家、业务员、审核、出纳、超级管理员五个角色协同处理从申请、验机、审核到打款凭证推送的业务闭环。
         </p>
         <div class="hero-metrics">
           <div>
@@ -70,7 +70,7 @@ async function submitLogin() {
           </div>
           <div>
             <strong>0.1</strong>
-            <span>演示版本</span>
+            <span>测试版本</span>
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@ async function submitLogin() {
         <div class="panel-title">
           <div>
             <p>账号登录</p>
-            <h2>选择角色开始彩排</h2>
+            <h2>选择角色进入系统</h2>
           </div>
           <el-icon><View /></el-icon>
         </div>

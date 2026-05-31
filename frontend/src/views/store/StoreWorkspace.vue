@@ -33,7 +33,7 @@ const form = reactive<ApplicationCreatePayload>({
   salePrice: 8999,
   loanAmount: 3215,
   periods: 12,
-  remark: '门店代客户提交远程彩排申请。',
+  remark: '门店代客户提交验机申请。',
 })
 
 const selected = computed(() => applications.selected)
@@ -87,7 +87,7 @@ async function submitSupplement() {
           fileName: 'store-supplement-demo.pdf',
           filePath: '/demo/store-supplement-demo.pdf',
           mimeType: 'application/pdf',
-          remark: '远程彩排补资料占位附件。',
+          remark: '门店补充资料附件。',
         },
       ],
     })
@@ -122,8 +122,8 @@ onMounted(() => {
     <div class="workspace-hero">
       <div>
         <el-tag type="danger" effect="plain">店家提交</el-tag>
-        <h2>店家工作台</h2>
-        <p>门店协助客户提交验机申请，查看自己的申请进度，并在被驳回补资料时补交材料。</p>
+        <h2>{{ auth.user?.display_name || '店家工作台' }}</h2>
+        <p>提交客户验机申请，跟进审核进度，并在需要补资料时及时补交材料。</p>
       </div>
       <div class="hero-actions">
         <el-button :icon="Refresh" plain @click="refresh()">刷新</el-button>
@@ -135,7 +135,7 @@ onMounted(() => {
       <article><strong>门店可见</strong><span>{{ applications.items.length }} 单</span></article>
       <article><strong>待门店处理</strong><span>{{ pendingCount }} 单</span></article>
       <article><strong>当前选中</strong><span>{{ selected?.applicationNo ?? '未选择' }}</span></article>
-      <article><strong>彩排账号</strong><span>{{ auth.user?.username }}</span></article>
+      <article><strong>登录账号</strong><span>{{ auth.user?.username }}</span></article>
     </div>
 
     <el-alert v-if="applications.error" type="error" :title="applications.error" show-icon />

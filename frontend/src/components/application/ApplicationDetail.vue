@@ -168,6 +168,20 @@ function reviewNoteFromLog(log: ApplicationLog) {
 function voucherTitle(attachment: AttachmentInfo) {
   return attachment.fileName || `凭证附件 ID：${attachment.id}`
 }
+
+function attachmentHref(attachment: AttachmentInfo) {
+  const path = attachment.filePath
+
+  if (!path) {
+    return null
+  }
+
+  if (/^https?:\/\//.test(path) || path.startsWith('/')) {
+    return path
+  }
+
+  return `/storage/${path}`
+}
 </script>
 
 <template>
@@ -183,6 +197,13 @@ function voucherTitle(attachment: AttachmentInfo) {
           <h3>{{ application.customerName }}的{{ application.brand }} {{ application.model }}</h3>
         </div>
         <StatusBadge :status="application.status" />
+      </div>
+
+      <div class="status-steps">
+        <span :class="{ done: true }">已提交</span>
+        <span :class="{ done: ['ASSIGNED', 'INSPECTION_IN_PROGRESS', 'PENDING_REVIEW', 'NEEDS_SUPPLEMENT', 'PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(application.status) }">验机</span>
+        <span :class="{ done: ['PENDING_REVIEW', 'NEEDS_SUPPLEMENT', 'PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(application.status) }">审核</span>
+        <span :class="{ done: ['PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(application.status) }">放款</span>
       </div>
 
       <div class="detail-metrics">
@@ -201,8 +222,8 @@ function voucherTitle(attachment: AttachmentInfo) {
       </div>
 
       <div class="detail-sections">
-        <section>
-          <h4>客户信息</h4>
+        <details class="detail-section" open>
+          <summary>客户信息</summary>
           <dl>
             <dt>姓名</dt>
             <dd>{{ application.customerName }}</dd>
@@ -213,10 +234,10 @@ function voucherTitle(attachment: AttachmentInfo) {
             <dt>地址</dt>
             <dd>{{ text(application.customerAddress) }}</dd>
           </dl>
-        </section>
+        </details>
 
-        <section>
-          <h4>设备信息</h4>
+        <details class="detail-section" open>
+          <summary>设备信息</summary>
           <dl>
             <dt>品牌型号</dt>
             <dd>{{ application.brand }} {{ application.model }}</dd>
@@ -227,10 +248,10 @@ function voucherTitle(attachment: AttachmentInfo) {
             <dt>成色说明</dt>
             <dd>{{ text(application.deviceCondition) }}</dd>
           </dl>
-        </section>
+        </details>
 
-        <section>
-          <h4>门店与业务员</h4>
+        <details class="detail-section">
+          <summary>门店与业务员</summary>
           <dl>
             <dt>门店</dt>
             <dd>{{ text(application.storeName) }}</dd>
@@ -241,10 +262,10 @@ function voucherTitle(attachment: AttachmentInfo) {
             <dt>验机状态</dt>
             <dd>{{ text(latestInspection?.status) }}</dd>
           </dl>
-        </section>
+        </details>
 
-        <section>
-          <h4>验机/审核/打款</h4>
+        <details class="detail-section" open>
+          <summary>验机/审核/打款</summary>
           <dl>
             <dt>验机备注</dt>
             <dd>{{ text(latestInspection?.inspectionNote) }}</dd>
@@ -270,8 +291,8 @@ function voucherTitle(attachment: AttachmentInfo) {
             <dd>
               <template v-if="payoutVoucher">
                 <a
-                  v-if="payoutVoucher.filePath"
-                  :href="payoutVoucher.filePath"
+                  v-if="attachmentHref(payoutVoucher)"
+                  :href="attachmentHref(payoutVoucher) ?? '#'"
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -282,7 +303,7 @@ function voucherTitle(attachment: AttachmentInfo) {
               <span v-else>暂无打款凭证记录</span>
             </dd>
           </dl>
-        </section>
+        </details>
       </div>
 
       <div class="log-panel">
@@ -354,6 +375,31 @@ function voucherTitle(attachment: AttachmentInfo) {
   margin-top: 18px;
 }
 
+.status-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.status-steps span {
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid #eceef4;
+  border-radius: 999px;
+  background: #fff;
+  color: #7b818e;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.status-steps span.done {
+  border-color: #f4b1b4;
+  background: #fff4f4;
+  color: #b91720;
+}
+
 .detail-metrics div {
   min-height: 86px;
   padding: 16px;
@@ -384,14 +430,33 @@ function voucherTitle(attachment: AttachmentInfo) {
   margin-top: 20px;
 }
 
-.detail-sections section {
+.detail-section {
   min-width: 0;
 }
 
-.detail-sections h4 {
+.detail-section summary {
+  cursor: pointer;
+  list-style: none;
   margin: 0 0 12px;
   color: #171a22;
   font-size: 16px;
+  font-weight: 800;
+}
+
+.detail-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-section summary::after {
+  content: "展开";
+  float: right;
+  color: #9aa3b2;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.detail-section[open] summary::after {
+  content: "收起";
 }
 
 dl {
@@ -438,6 +503,58 @@ dd {
   .detail-metrics,
   .detail-sections {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .application-detail {
+    padding: 14px;
+  }
+
+  .detail-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-title h3 {
+    font-size: 18px;
+  }
+
+  .status-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .status-steps span {
+    min-height: 30px;
+    padding: 7px 4px;
+    font-size: 12px;
+  }
+
+  .detail-metrics {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid #eceef4;
+    border-radius: 8px;
+  }
+
+  .detail-metrics div {
+    min-height: 70px;
+    border-top: 0;
+    border-bottom: 1px solid #eceef4;
+  }
+
+  .detail-metrics div:last-child {
+    border-bottom: 0;
+  }
+
+  dl {
+    grid-template-columns: 78px minmax(0, 1fr);
+    font-size: 13px;
+  }
+
+  .log-panel .el-empty {
+    --el-empty-padding: 12px 0;
   }
 }
 </style>

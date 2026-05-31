@@ -55,8 +55,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
     meta: {
       title: '超级管理员',
       role: 'SUPER_ADMIN',
-      badge: '彩排控制台',
-      primaryAction: '重置演示数据',
+      badge: '管理控制台',
+      primaryAction: '重置测试数据',
     },
   },
 ]

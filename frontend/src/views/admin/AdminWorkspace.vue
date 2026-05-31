@@ -27,7 +27,7 @@ const statusForm = reactive<{
   status: 'PENDING_ASSIGNMENT',
   currentOwnerRole: 'AUDITOR',
   currentOwnerUserId: null,
-  remark: '超级管理员手动调整彩排数据状态。',
+  remark: '超级管理员手动调整业务测试数据状态。',
 })
 
 const statusOptions: ApplicationStatus[] = [
@@ -71,7 +71,7 @@ async function fetchAccounts() {
 
 async function resetDemo() {
   try {
-    await ElMessageBox.confirm('重置会恢复所有彩排数据，当前演示进度会被清空。', '确认重置演示数据', {
+    await ElMessageBox.confirm('重置会恢复所有测试数据，当前业务进度会被清空。', '确认重置测试数据', {
       confirmButtonText: '确认重置',
       cancelButtonText: '取消',
       type: 'warning',
@@ -84,7 +84,7 @@ async function resetDemo() {
 
   try {
     await resetDemoData()
-    ElMessage.success('演示数据已重置。')
+    ElMessage.success('测试数据已重置。')
     await refresh()
   } catch (error) {
     ElMessage.error(errorMessage(error))
@@ -147,9 +147,9 @@ onMounted(() => {
   <section class="workspace-page role-desktop">
     <div class="workspace-hero">
       <div>
-        <el-tag type="danger" effect="plain">彩排控制台</el-tag>
+        <el-tag type="danger" effect="plain">管理控制台</el-tag>
         <h2>超级管理员</h2>
-        <p>超管用于远程彩排前重置数据、查看所有账号，并在演示异常时手动修正申请状态。</p>
+        <p>超管用于重置测试数据、查看所有账号，并在流程异常时手动修正申请状态。</p>
       </div>
       <div class="hero-actions">
         <el-button :icon="Refresh" plain @click="refresh()">刷新</el-button>
@@ -159,7 +159,7 @@ onMounted(() => {
 
     <div class="summary-grid">
       <article><strong>全部申请</strong><span>{{ applications.items.length }} 单</span></article>
-      <article><strong>演示账号</strong><span>{{ accounts.length }} 个</span></article>
+      <article><strong>测试账号</strong><span>{{ accounts.length }} 个</span></article>
       <article><strong>业务员</strong><span>{{ roleCounts.SALES ?? 0 }} 个</span></article>
       <article><strong>门店</strong><span>{{ roleCounts.STORE ?? 0 }} 个</span></article>
     </div>
@@ -167,7 +167,7 @@ onMounted(() => {
     <section class="admin-grid">
       <div class="table-panel">
         <div class="panel-heading">
-          <h3>Demo Accounts</h3>
+          <h3>测试账号</h3>
           <el-tag type="danger" effect="plain">密码 123456</el-tag>
         </div>
         <el-table v-loading="accountsLoading" :data="accounts" height="300" row-key="id">

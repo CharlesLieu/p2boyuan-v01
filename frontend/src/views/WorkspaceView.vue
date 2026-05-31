@@ -10,7 +10,7 @@ const route = useRoute()
 const applications = useApplicationsStore()
 
 const title = computed(() => String(route.meta.title ?? '工作台'))
-const badge = computed(() => String(route.meta.badge ?? '彩排节点'))
+const badge = computed(() => String(route.meta.badge ?? '流程节点'))
 const primaryAction = computed(() => String(route.meta.primaryAction ?? '继续处理'))
 const pendingCount = computed(
   () =>
@@ -46,7 +46,7 @@ onMounted(() => {
       <div>
         <el-tag type="danger" effect="plain">{{ badge }}</el-tag>
         <h2>{{ title }}</h2>
-        <p>围绕申请、验机、审核、补资料、打款凭证建立同一套彩排数据，方便不同角色远程联动测试。</p>
+        <p>围绕申请、验机、审核、补资料、打款凭证建立同一套业务数据，方便不同角色联动测试。</p>
       </div>
       <el-button type="danger" size="large" @click="applications.fetch()">{{ primaryAction }}</el-button>
     </div>
@@ -69,7 +69,7 @@ onMounted(() => {
       </article>
       <article>
         <el-icon><DataBoard /></el-icon>
-        <strong>演示数据</strong>
+        <strong>业务数据</strong>
         <span>一致</span>
       </article>
     </div>

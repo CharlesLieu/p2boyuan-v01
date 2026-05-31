@@ -45,7 +45,7 @@ class AdminController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->validationError($request, '请确认后再重置演示数据。', $validator->errors()->toArray());
+            return $this->validationError($request, '请确认后再重置测试数据。', $validator->errors()->toArray());
         }
 
         $token = $request->user()->currentAccessToken();
@@ -61,7 +61,7 @@ class AdminController extends Controller
             }
         }
 
-        return $this->success($request, $result, '演示数据已重置。');
+        return $this->success($request, $result, '测试数据已重置。');
     }
 
     public function updateApplicationStatus(Request $request, Application $application): JsonResponse

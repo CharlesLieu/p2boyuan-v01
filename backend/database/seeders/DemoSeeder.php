@@ -105,7 +105,7 @@ class DemoSeeder extends Seeder
                     'sale_price' => $application['sale_price'],
                     'loan_amount' => $application['loan_amount'],
                     'periods' => $application['periods'],
-                    'remark' => 'v0.1 demo application',
+                    'remark' => 'v0.1 business test application',
                     'created_at' => $createdAt,
                     'updated_at' => $createdAt,
                 ]);
@@ -176,7 +176,7 @@ class DemoSeeder extends Seeder
                 }
 
                 if ($application['status'] !== ApplicationStatus::PENDING_ASSIGNMENT->value) {
-                    $this->addStatusLog($applicationId, $users[$application['owner']], $application['owner_role'], null, $application['status'], '演示数据当前状态：'.$application['status'], $createdAt->copy()->addMinutes(60));
+                    $this->addStatusLog($applicationId, $users[$application['owner']], $application['owner_role'], null, $application['status'], '测试数据当前状态：'.$application['status'], $createdAt->copy()->addMinutes(60));
                 }
             }
         });
@@ -195,7 +195,7 @@ class DemoSeeder extends Seeder
             'file_path' => 'demo/'.$applicationId.'/'.$fileName,
             'mime_type' => str_ends_with($fileName, '.pdf') ? 'application/pdf' : 'image/png',
             'file_size' => 128000,
-            'remark' => 'v0.1 demo attachment',
+            'remark' => 'v0.1 business test attachment',
             'created_at' => $createdAt,
             'updated_at' => $createdAt,
         ]);

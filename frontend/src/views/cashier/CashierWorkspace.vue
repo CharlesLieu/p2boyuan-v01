@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Money, Refresh } from '@element-plus/icons-vue'
+import { Money, Refresh, Upload } from '@element-plus/icons-vue'
 import ApplicationDetail from '../../components/application/ApplicationDetail.vue'
 import {
   confirmPayout,
   listPayouts,
+  uploadAttachment,
+  type AttachmentInfo,
   type PayoutRecord,
 } from '../../api/modules/applications'
 import { useApplicationsStore } from '../../stores/applications'
@@ -15,13 +17,13 @@ const payouts = ref<PayoutRecord[]>([])
 const selectedPayoutId = ref<string | null>(null)
 const loading = ref(false)
 const operating = ref(false)
+const uploading = ref(false)
+const voucherInput = ref<HTMLInputElement | null>(null)
+const voucherAttachment = ref<AttachmentInfo | null>(null)
 const form = reactive({
   amount: 0,
   paidAt: dateTimeValue(),
-  remark: '远程彩排确认打款，凭证已上传。',
-  voucherFileName: 'payout-voucher-demo.png',
-  voucherFilePath: '/demo/payout-voucher-demo.png',
-  voucherAttachmentId: '',
+  remark: '线下打款已完成，凭证已上传。',
 })
 
 const selectedPayout = computed(
@@ -66,17 +68,23 @@ async function confirmSelectedPayout() {
     return
   }
 
+  if (!voucherAttachment.value) {
+    ElMessage.warning('请先上传打款凭证。')
+    return
+  }
+
   operating.value = true
 
   try {
     await confirmPayout(selectedPayout.value.id, {
       amount: form.amount || Number(selectedPayout.value.amount),
       paidAt: form.paidAt,
-      remark: `${form.remark}${form.voucherAttachmentId ? ` 凭证编号：${form.voucherAttachmentId}` : ''}`,
+      remark: form.remark,
       voucher: {
-        fileName: form.voucherFileName,
-        filePath: form.voucherFilePath,
-        mimeType: 'image/png',
+        fileName: voucherAttachment.value.fileName ?? 'payout-voucher',
+        filePath: voucherAttachment.value.filePath ?? '',
+        mimeType: voucherAttachment.value.mimeType ?? null,
+        fileSize: voucherAttachment.value.fileSize ?? null,
         remark: '出纳上传的打款凭证。',
       },
     })
@@ -92,7 +100,38 @@ async function confirmSelectedPayout() {
 function selectPayout(payout: PayoutRecord) {
   selectedPayoutId.value = payout.id
   form.amount = Number(payout.amount ?? 0)
+  voucherAttachment.value = null
   loadSelectedApplication()
+}
+
+function triggerVoucherUpload() {
+  voucherInput.value?.click()
+}
+
+async function handleVoucherChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!file || !selectedPayout.value?.applicationId) {
+    return
+  }
+
+  uploading.value = true
+
+  try {
+    voucherAttachment.value = await uploadAttachment({
+      applicationId: selectedPayout.value.applicationId,
+      module: 'PAYOUT',
+      file,
+      remark: '出纳上传的打款凭证。',
+    })
+    ElMessage.success('凭证已上传。')
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  } finally {
+    uploading.value = false
+  }
 }
 
 function money(value: number | string | null | undefined) {
@@ -170,14 +209,32 @@ onMounted(() => {
         <h3>确认打款</h3>
         <el-input-number v-model="form.amount" :min="0" />
         <el-date-picker v-model="form.paidAt" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
-        <el-input v-model="form.voucherAttachmentId" placeholder="凭证编号，可选" />
-        <el-input v-model="form.voucherFileName" placeholder="凭证文件名" />
-        <el-input v-model="form.voucherFilePath" placeholder="凭证展示路径" />
+        <div class="voucher-uploader">
+          <input
+            ref="voucherInput"
+            type="file"
+            accept=".png,.jpg,.jpeg,.webp,.pdf"
+            @change="handleVoucherChange"
+          />
+          <el-button
+            :icon="Upload"
+            :loading="uploading"
+            :disabled="!selectedPayout || selectedPayout.status !== 'PENDING'"
+            plain
+            @click="triggerVoucherUpload"
+          >
+            上传打款凭证
+          </el-button>
+          <p v-if="voucherAttachment">
+            已上传：{{ voucherAttachment.fileName }}
+          </p>
+          <p v-else>支持 PNG、JPG、WEBP、PDF，最大 10MB。</p>
+        </div>
         <el-input v-model="form.remark" type="textarea" :rows="3" />
         <el-button
           type="danger"
           :icon="Money"
-          :disabled="!selectedPayout || selectedPayout.status !== 'PENDING'"
+          :disabled="!selectedPayout || selectedPayout.status !== 'PENDING' || !voucherAttachment"
           :loading="operating"
           @click="confirmSelectedPayout"
         >
