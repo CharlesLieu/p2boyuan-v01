@@ -118,10 +118,11 @@ composer install --no-dev --optimize-autoloader
 php artisan migrate --force
 php artisan db:seed --force
 php artisan config:cache
-php artisan route:cache
 php artisan view:cache
 php artisan storage:link
 ```
+
+Do not run `php artisan route:cache` unless Closure routes have first been removed or converted. The current route files include Closure routes, so `route:cache` will fail.
 
 Confirm writable paths:
 

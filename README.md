@@ -7,7 +7,7 @@ This repository is the deployable v0.1 demo for the remote rehearsal flow. It le
 - Frontend: Vue 3 + Vite + TypeScript + Element Plus + Pinia
 - Backend: Laravel API + Sanctum bearer tokens
 - Database: MySQL 8
-- Local database helper: Docker Compose for MySQL
+- Local Docker stack: Nginx, frontend, backend, and MySQL via Docker Compose
 
 ## v0.1 Scope
 
@@ -46,23 +46,33 @@ cd frontend
 copy .env.example .env
 ```
 
-Root `.env.example` mirrors the default local database values used by `docker-compose.yml`.
+Root `.env.example` mirrors the Docker Compose variables used by the full local app stack. For local Docker, copy it to `.env` and set `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, and `BACKEND_APP_KEY` before starting containers.
 
-### 2. Start MySQL
+### 2. Start the local Docker app stack
 
 ```powershell
-docker compose up -d mysql
+copy .env.example .env
+docker run --rm php:8.4-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 ```
 
-Default local MySQL connection:
+Edit root `.env`:
 
-- Host: `127.0.0.1`
-- Port: `3307`
-- Database: `p2boyuan_v01`
-- User: `p2boyuan`
-- Password: `p2boyuan_dev_password`
+- Set `MYSQL_PASSWORD` and `MYSQL_ROOT_PASSWORD` to local-only non-placeholder values.
+- Paste the generated key into `BACKEND_APP_KEY=base64:...`.
+
+Then start the full stack:
+
+```powershell
+docker compose up -d --build
+```
+
+Open `http://localhost`.
+
+The Docker MySQL service is internal to the Compose network and is not exposed on host port `3307`. For host-based Laravel development, use your own MySQL service or explicitly add a local-only port mapping before pointing `backend/.env` at it.
 
 ### 3. Install dependencies
+
+If you prefer host-based development instead of the Docker app stack, install dependencies and run Laravel/Vite directly:
 
 Backend:
 
