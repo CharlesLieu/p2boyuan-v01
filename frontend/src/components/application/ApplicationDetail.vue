@@ -522,13 +522,53 @@ dd {
 
   .status-steps {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    position: relative;
+    gap: 0;
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .status-steps::before {
+    content: "";
+    position: absolute;
+    top: 22px;
+    right: 12.5%;
+    left: 12.5%;
+    height: 2px;
+    background: #eceef4;
   }
 
   .status-steps span {
-    min-height: 30px;
-    padding: 7px 4px;
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 38px;
+    padding: 18px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     font-size: 12px;
+  }
+
+  .status-steps span::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #dfe5ee;
+    border-radius: 999px;
+    background: #fff;
+  }
+
+  .status-steps span.done {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .status-steps span.done::before {
+    border-color: #d7232a;
+    background: #d7232a;
   }
 
   .detail-metrics {

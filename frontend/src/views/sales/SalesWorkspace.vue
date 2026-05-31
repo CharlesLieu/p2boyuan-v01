@@ -228,6 +228,32 @@ onBeforeUnmount(() => {
         :logs-loading="applications.logsLoading"
         @load-logs="applications.loadLogs()"
       />
+      <template #footer>
+        <div class="drawer-footer-actions sales-footer-actions">
+          <el-button @click="detailVisible = false">关闭</el-button>
+          <el-button :icon="VideoPlay" :disabled="!canStart" :loading="operating" @click="startTask">
+            开始验机
+          </el-button>
+          <el-button
+            type="danger"
+            :icon="Check"
+            :disabled="!canSubmitInspection"
+            :loading="operating"
+            @click="submitTask"
+          >
+            提交验机
+          </el-button>
+          <el-button
+            type="warning"
+            :icon="Close"
+            :disabled="!canRejectInspection"
+            :loading="operating"
+            @click="rejectTask"
+          >
+            退回补资料
+          </el-button>
+        </div>
+      </template>
     </el-drawer>
   </section>
 </template>

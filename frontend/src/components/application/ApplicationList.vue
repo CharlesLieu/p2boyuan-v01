@@ -130,8 +130,8 @@ function nextAction(application: ApplicationItem) {
 
 .application-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.35fr) minmax(150px, 1.1fr) minmax(108px, 0.72fr) 116px 96px;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(116px, 0.5fr);
+  gap: 10px 14px;
   align-items: center;
   width: 100%;
   min-height: 82px;
@@ -174,11 +174,16 @@ function nextAction(application: ApplicationItem) {
 
 .row-status {
   display: grid;
-  justify-items: end;
+  justify-items: start;
 }
 
 .row-next {
-  display: inline-grid;
+  display: inline-flex;
+  grid-column: 3;
+  justify-self: end;
+  align-self: end;
+  align-items: center;
+  justify-content: center;
   place-items: center;
   min-height: 32px;
   padding: 0 10px;
@@ -191,22 +196,19 @@ function nextAction(application: ApplicationItem) {
 
 @media (max-width: 1180px) {
   .application-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
-  .row-status {
-    justify-items: start;
+  .row-next {
+    grid-column: auto;
+    justify-self: start;
   }
 }
 
 @media (max-width: 720px) {
-  .application-list {
-    padding: 14px;
-  }
-
   .application-row {
     position: relative;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px 12px;
     min-height: 0;
     padding: 14px;
@@ -223,7 +225,10 @@ function nextAction(application: ApplicationItem) {
   }
 
   .row-next {
+    grid-column: 2;
+    grid-row: 4;
     align-self: center;
+    justify-self: end;
   }
 
   .row-main strong {

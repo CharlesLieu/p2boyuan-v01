@@ -123,8 +123,6 @@ body {
 }
 
 .shell-header {
-  position: sticky;
-  top: 0;
   z-index: 8;
   border-color: var(--by-line);
   background: rgba(255, 255, 255, 0.9);
@@ -211,10 +209,11 @@ dt {
 
 .application-workbench {
   min-width: 0;
+  overflow: hidden;
 }
 
 .role-mobile .application-workbench {
-  grid-template-columns: minmax(0, 0.92fr) minmax(520px, 1.08fr);
+  grid-template-columns: minmax(0, 0.46fr) minmax(0, 0.54fr);
 }
 
 .role-desktop .application-workbench {
@@ -348,19 +347,24 @@ dt {
   box-shadow: none;
 }
 
+.drawer-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 1600px) and (min-width: 1181px) {
   .role-mobile .application-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .role-mobile .application-row .row-main,
-  .role-mobile .application-row .row-device,
-  .role-mobile .application-row .row-money {
-    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .role-mobile .application-row .row-status {
     justify-items: start;
+  }
+
+  .role-mobile .application-row .row-next {
+    grid-column: 2;
+    justify-self: end;
   }
 }
 
@@ -613,5 +617,17 @@ dt {
 
   .role-mobile .application-workbench {
     display: block;
+  }
+
+  .drawer-footer-actions,
+  .sales-footer-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .drawer-footer-actions .el-button {
+    width: 100%;
+    margin-left: 0;
   }
 }

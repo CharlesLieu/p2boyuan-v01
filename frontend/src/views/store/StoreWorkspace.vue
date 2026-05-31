@@ -203,6 +203,19 @@ onBeforeUnmount(() => {
         :logs-loading="applications.logsLoading"
         @load-logs="applications.loadLogs()"
       />
+      <template #footer>
+        <div class="drawer-footer-actions">
+          <el-button @click="detailVisible = false">关闭</el-button>
+          <el-button
+            type="warning"
+            :disabled="!canSubmitSupplement"
+            :loading="operating"
+            @click="supplementVisible = true"
+          >
+            提交补资料
+          </el-button>
+        </div>
+      </template>
     </el-drawer>
 
     <el-drawer v-model="createVisible" title="新建验机申请" size="520px">
