@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import ApplicationDetail from '../../components/application/ApplicationDetail.vue'
@@ -15,7 +15,9 @@ import { useAuthStore } from '../../stores/auth'
 const applications = useApplicationsStore()
 const auth = useAuthStore()
 const createVisible = ref(false)
+const detailVisible = ref(false)
 const supplementVisible = ref(false)
+const isCompactScreen = ref(false)
 const operating = ref(false)
 const supplementNote = ref('补充客户资料、门店确认单和设备照片。')
 const form = reactive<ApplicationCreatePayload>({
@@ -54,6 +56,14 @@ async function refresh(selectedId = applications.selectedId) {
   await applications.fetch()
   if (selectedId) {
     await applications.select(selectedId)
+  }
+}
+
+async function handleApplicationSelect(applicationId: string) {
+  await applications.select(applicationId)
+
+  if (isCompactScreen.value) {
+    detailVisible.value = true
   }
 }
 
@@ -112,8 +122,18 @@ function errorMessage(error: unknown) {
   return '操作失败，请稍后重试。'
 }
 
+function syncCompactScreen() {
+  isCompactScreen.value = window.matchMedia('(max-width: 720px)').matches
+}
+
 onMounted(() => {
+  syncCompactScreen()
+  window.addEventListener('resize', syncCompactScreen)
   applications.fetch()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncCompactScreen)
 })
 </script>
 
@@ -157,9 +177,10 @@ onMounted(() => {
         :applications="applications.items"
         :loading="applications.loading"
         :selected-id="applications.selectedId"
-        @select="applications.select"
+        @select="handleApplicationSelect"
       />
       <ApplicationDetail
+        class="desktop-application-detail"
         :application="applications.selected"
         :loading="applications.detailLoading"
         :logs="applications.logs"
@@ -167,6 +188,22 @@ onMounted(() => {
         @load-logs="applications.loadLogs()"
       />
     </div>
+
+    <el-drawer
+      v-model="detailVisible"
+      class="mobile-detail-drawer"
+      direction="btt"
+      size="92%"
+      title="申请详情"
+    >
+      <ApplicationDetail
+        :application="applications.selected"
+        :loading="applications.detailLoading"
+        :logs="applications.logs"
+        :logs-loading="applications.logsLoading"
+        @load-logs="applications.loadLogs()"
+      />
+    </el-drawer>
 
     <el-drawer v-model="createVisible" title="新建验机申请" size="520px">
       <el-form label-position="top" class="drawer-form">

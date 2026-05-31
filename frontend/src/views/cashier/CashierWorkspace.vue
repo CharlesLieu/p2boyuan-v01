@@ -20,6 +20,15 @@ const operating = ref(false)
 const uploading = ref(false)
 const voucherInput = ref<HTMLInputElement | null>(null)
 const voucherAttachment = ref<AttachmentInfo | null>(null)
+const voucherPreviewUrl = computed(() =>
+  voucherAttachment.value ? attachmentHref(voucherAttachment.value) : null,
+)
+const voucherIsImage = computed(() => {
+  const mimeType = voucherAttachment.value?.mimeType ?? ''
+  const fileName = voucherAttachment.value?.fileName ?? ''
+
+  return mimeType.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(fileName)
+})
 const form = reactive({
   amount: 0,
   paidAt: dateTimeValue(),
@@ -108,6 +117,12 @@ function triggerVoucherUpload() {
   voucherInput.value?.click()
 }
 
+function previewVoucher() {
+  if (voucherPreviewUrl.value) {
+    window.open(voucherPreviewUrl.value, '_blank', 'noopener,noreferrer')
+  }
+}
+
 async function handleVoucherChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -136,6 +151,34 @@ async function handleVoucherChange(event: Event) {
 
 function money(value: number | string | null | undefined) {
   return `￥${Number(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`
+}
+
+function formatFileSize(value: number | null | undefined) {
+  const size = Number(value ?? 0)
+
+  if (size <= 0) {
+    return '大小待确认'
+  }
+
+  if (size < 1024 * 1024) {
+    return `${Math.ceil(size / 1024)} KB`
+  }
+
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
+function attachmentHref(attachment: AttachmentInfo) {
+  const path = attachment.filePath
+
+  if (!path) {
+    return null
+  }
+
+  if (/^https?:\/\//.test(path) || path.startsWith('/')) {
+    return path
+  }
+
+  return `/storage/${path}`
 }
 
 function dateTimeValue() {
@@ -225,9 +268,26 @@ onMounted(() => {
           >
             上传打款凭证
           </el-button>
-          <p v-if="voucherAttachment">
-            已上传：{{ voucherAttachment.fileName }}
-          </p>
+          <div v-if="voucherAttachment" class="voucher-preview">
+            <img
+              v-if="voucherIsImage && voucherPreviewUrl"
+              :src="voucherPreviewUrl"
+              alt="打款凭证预览"
+            />
+            <div v-else class="voucher-file-card">
+              <strong>{{ voucherAttachment.mimeType === 'application/pdf' ? 'PDF' : '文件' }}</strong>
+            </div>
+            <div>
+              <strong>{{ voucherAttachment.fileName }}</strong>
+              <span>{{ formatFileSize(voucherAttachment.fileSize) }}</span>
+            </div>
+            <div class="voucher-preview-actions">
+              <el-button size="small" plain :disabled="!voucherPreviewUrl" @click="previewVoucher">
+                预览凭证
+              </el-button>
+              <el-button size="small" @click="triggerVoucherUpload">重新上传</el-button>
+            </div>
+          </div>
           <p v-else>支持 PNG、JPG、WEBP、PDF，最大 10MB。</p>
         </div>
         <el-input v-model="form.remark" type="textarea" :rows="3" />

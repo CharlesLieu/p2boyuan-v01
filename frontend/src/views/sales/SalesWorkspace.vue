@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Check, Close, Refresh, VideoPlay } from '@element-plus/icons-vue'
 import ApplicationDetail from '../../components/application/ApplicationDetail.vue'
@@ -16,6 +16,8 @@ import { useAuthStore } from '../../stores/auth'
 const applications = useApplicationsStore()
 const auth = useAuthStore()
 const operating = ref(false)
+const detailVisible = ref(false)
+const isCompactScreen = ref(false)
 const inspectionNote = ref('IMEI 与门店资料一致，外观轻微使用痕迹，功能检测通过。')
 const rejectReason = ref('客户资料或设备照片不完整，请门店补充后再验机。')
 const supplementNote = ref('业务员已补充验机现场照片和设备检测说明。')
@@ -46,6 +48,14 @@ async function refresh(selectedId = applications.selectedId) {
   await applications.fetch()
   if (selectedId) {
     await applications.select(selectedId)
+  }
+}
+
+async function handleApplicationSelect(applicationId: string) {
+  await applications.select(applicationId)
+
+  if (isCompactScreen.value) {
+    detailVisible.value = true
   }
 }
 
@@ -130,8 +140,18 @@ function errorMessage(error: unknown) {
   return '操作失败，请稍后重试。'
 }
 
+function syncCompactScreen() {
+  isCompactScreen.value = window.matchMedia('(max-width: 720px)').matches
+}
+
 onMounted(() => {
+  syncCompactScreen()
+  window.addEventListener('resize', syncCompactScreen)
   applications.fetch()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncCompactScreen)
 })
 </script>
 
@@ -182,9 +202,10 @@ onMounted(() => {
         :applications="applications.items"
         :loading="applications.loading"
         :selected-id="applications.selectedId"
-        @select="applications.select"
+        @select="handleApplicationSelect"
       />
       <ApplicationDetail
+        class="desktop-application-detail"
         :application="applications.selected"
         :loading="applications.detailLoading"
         :logs="applications.logs"
@@ -192,5 +213,21 @@ onMounted(() => {
         @load-logs="applications.loadLogs()"
       />
     </div>
+
+    <el-drawer
+      v-model="detailVisible"
+      class="mobile-detail-drawer"
+      direction="btt"
+      size="92%"
+      title="申请详情"
+    >
+      <ApplicationDetail
+        :application="applications.selected"
+        :loading="applications.detailLoading"
+        :logs="applications.logs"
+        :logs-loading="applications.logsLoading"
+        @load-logs="applications.loadLogs()"
+      />
+    </el-drawer>
   </section>
 </template>

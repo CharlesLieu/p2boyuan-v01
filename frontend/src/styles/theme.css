@@ -214,7 +214,7 @@ dt {
 }
 
 .role-mobile .application-workbench {
-  grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(520px, 1.08fr);
 }
 
 .role-desktop .application-workbench {
@@ -229,6 +229,11 @@ dt {
 .role-mobile .application-row {
   min-height: 88px;
   background: #fff;
+}
+
+.role-mobile .application-row > span,
+.role-mobile .application-detail {
+  min-width: 0;
 }
 
 .role-mobile .operation-form {
@@ -278,6 +283,85 @@ dt {
   color: var(--by-muted);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.voucher-preview {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+}
+
+.voucher-preview img,
+.voucher-file-card {
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--by-line);
+  border-radius: var(--by-radius);
+  background: #fff;
+}
+
+.voucher-preview img {
+  object-fit: cover;
+}
+
+.voucher-file-card {
+  display: grid;
+  place-items: center;
+  color: var(--by-red);
+  font-weight: 900;
+}
+
+.voucher-preview strong,
+.voucher-preview span {
+  display: block;
+  min-width: 0;
+}
+
+.voucher-preview strong {
+  overflow: hidden;
+  color: var(--by-ink);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voucher-preview span {
+  margin-top: 4px;
+  color: var(--by-muted);
+  font-size: 12px;
+}
+
+.voucher-preview-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-detail-drawer .el-drawer__body {
+  padding: 0 12px 12px;
+  background: #f6f7fb;
+}
+
+.mobile-detail-drawer .application-detail {
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 1600px) and (min-width: 1181px) {
+  .role-mobile .application-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .role-mobile .application-row .row-main,
+  .role-mobile .application-row .row-device,
+  .role-mobile .application-row .row-money {
+    grid-column: 1 / -1;
+  }
+
+  .role-mobile .application-row .row-status {
+    justify-items: start;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -425,5 +509,109 @@ dt {
 
   .el-drawer {
     width: calc(100vw - 24px) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .login-page {
+    padding: 12px;
+    background:
+      linear-gradient(145deg, rgba(175, 20, 28, 0.96), rgba(104, 18, 28, 0.92)),
+      url("../assets/hero.png") center/cover;
+  }
+
+  .login-hero {
+    display: block;
+    min-height: auto;
+  }
+
+  .hero-copy {
+    padding: 6px 2px 14px;
+  }
+
+  .hero-copy .eyebrow {
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .hero-copy h1 {
+    max-width: 340px;
+    font-size: 32px;
+    line-height: 1.12;
+  }
+
+  .hero-subtitle {
+    max-width: 340px;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .hero-metrics {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .hero-metrics div {
+    flex: 1;
+    min-height: 56px;
+    padding: 10px;
+  }
+
+  .hero-metrics strong {
+    font-size: 20px;
+  }
+
+  .hero-metrics span {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .login-panel {
+    padding: 16px;
+    box-shadow: 0 16px 42px rgba(65, 10, 18, 0.26);
+  }
+
+  .panel-title {
+    margin-bottom: 14px;
+  }
+
+  .panel-title h2 {
+    font-size: 22px;
+  }
+
+  .quick-login {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .quick-login button {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    min-height: 84px;
+    padding: 12px;
+  }
+
+  .quick-login strong {
+    grid-row: auto;
+    font-size: 16px;
+  }
+
+  .quick-login span,
+  .quick-login small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .desktop-application-detail {
+    display: none;
+  }
+
+  .role-mobile .application-workbench {
+    display: block;
   }
 }
