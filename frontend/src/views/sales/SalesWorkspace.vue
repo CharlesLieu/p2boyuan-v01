@@ -177,14 +177,6 @@ function submitTask() {
         submitInspectionTask(latestTask.value!.id, {
           inspectionResult: 'PASS',
           inspectionNote: inspectionNote.value,
-          attachments: [
-            {
-              fileName: 'inspection-front.png',
-              filePath: '/demo/inspection-front.png',
-              mimeType: 'image/png',
-              remark: '验机正面照片。',
-            },
-          ],
         }),
       '验机结果已提交，等待审核。',
     )
@@ -206,14 +198,6 @@ function submitSupplement() {
       () =>
         submitApplicationSupplement(selected.value!.id, {
           note: supplementNote.value,
-          attachments: [
-            {
-              fileName: 'sales-supplement-demo.png',
-              filePath: '/demo/sales-supplement-demo.png',
-              mimeType: 'image/png',
-              remark: '业务员补充验机资料。',
-            },
-          ],
         }),
       '业务员补充资料已提交。',
     )
