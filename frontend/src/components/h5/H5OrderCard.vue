@@ -5,13 +5,13 @@ defineProps<{
   subtitle: string
   amount: string
   status: string
-  image: string
+  image?: string | null
 }>()
 </script>
 
 <template>
-  <article class="h5-order-card">
-    <img class="h5-order-image" :src="image" :alt="title" />
+  <article class="h5-order-card h5-order-main" :class="{ 'no-media': !image }">
+    <img v-if="image" class="h5-order-image" :src="image" :alt="title" />
 
     <div class="h5-order-content">
       <div class="h5-order-topline">
@@ -43,6 +43,10 @@ defineProps<{
   border-radius: var(--h5-radius);
   background: var(--h5-card);
   box-shadow: var(--h5-shadow);
+}
+
+.h5-order-main.no-media {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .h5-order-image {

@@ -36,8 +36,9 @@ const emit = defineEmits<{ tabChange: [key: string] }>()
 
 <style scoped>
 .h5-app-frame {
+  --h5-bottom-nav-height: 64px;
   min-height: 100dvh;
-  padding: 0 14px 82px;
+  padding: 0 14px calc(var(--h5-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 18px);
   background: var(--h5-bg);
   color: var(--h5-ink);
   font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
@@ -88,6 +89,7 @@ const emit = defineEmits<{ tabChange: [key: string] }>()
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 8px;
   width: min(100%, 560px);
+  min-height: var(--h5-bottom-nav-height);
   margin: 0 auto;
   padding: 9px 14px calc(env(safe-area-inset-bottom, 0px) + 9px);
   border-top: 1px solid var(--h5-border);
