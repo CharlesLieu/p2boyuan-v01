@@ -13,6 +13,16 @@
   --by-shadow: 0 14px 34px rgba(16, 24, 39, 0.11);
   --by-shadow-soft: 0 8px 20px rgba(16, 24, 39, 0.06);
   --by-radius: 8px;
+  --h5-bg: #eaf1ff;
+  --h5-card: #ffffff;
+  --h5-soft: #f3f6ff;
+  --h5-ink: #17234d;
+  --h5-muted: #67759b;
+  --h5-blue: #5d78ff;
+  --h5-orange: #f07a4a;
+  --h5-border: rgba(93, 120, 255, 0.16);
+  --h5-shadow: 0 14px 32px rgba(61, 86, 150, 0.12);
+  --h5-radius: 20px;
   --el-color-primary: var(--by-red);
   --el-color-danger: var(--by-red);
   --el-color-warning: var(--by-amber);
@@ -21,6 +31,12 @@
   --el-border-color: var(--by-line);
   --el-text-color-primary: var(--by-ink);
   --el-text-color-regular: #374151;
+}
+
+.role-mobile,
+.merchant-h5,
+.h5-page {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
 }
 
 body {
