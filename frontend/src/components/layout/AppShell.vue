@@ -37,7 +37,7 @@ async function handleLogout() {
         <div class="brand-mark">B</div>
         <div>
           <p>博远业务系统</p>
-          <strong>业务测试版</strong>
+          <strong>业务工作台</strong>
         </div>
       </div>
 

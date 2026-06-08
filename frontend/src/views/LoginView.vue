@@ -54,8 +54,8 @@ async function submitLogin() {
   <main class="login-page">
     <section class="login-hero">
       <div class="hero-copy">
-        <p class="eyebrow">v0.1 业务测试版</p>
-        <h1>回收金融业务流程系统</h1>
+        <p class="eyebrow">V0.1 业务工作台</p>
+        <h1>回收金融业务流程平台</h1>
         <p class="hero-subtitle">
           商家、业务员、审核、出纳、超级管理员五个角色协同处理从验机、审核到打款凭证查看的业务闭环。
         </p>
@@ -70,7 +70,7 @@ async function submitLogin() {
           </div>
           <div>
             <strong>0.1</strong>
-            <span>测试版本</span>
+            <span>版本阶段</span>
           </div>
         </div>
       </div>
@@ -106,7 +106,7 @@ async function submitLogin() {
           />
           <el-button
             class="login-submit"
-            type="danger"
+            type="primary"
             size="large"
             native-type="submit"
             :loading="auth.loading"
