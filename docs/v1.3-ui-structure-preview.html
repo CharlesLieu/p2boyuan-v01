@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>v1.3 UI 改造结构图</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #102033;
+      background: #f3f8f7;
+    }
+    .page { max-width: 1200px; margin: 0 auto; padding: 36px 24px 48px; }
+    .hero {
+      padding: 26px;
+      border: 1px solid #dcebe8;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #ffffff 0%, #eefbf6 50%, #edf7ff 100%);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+    }
+    .eyebrow { margin: 0 0 8px; color: #0f766e; font-weight: 700; letter-spacing: 0; }
+    h1 { margin: 0; font-size: 30px; line-height: 1.2; }
+    .subtitle { max-width: 760px; margin: 14px 0 0; color: #64748b; line-height: 1.7; }
+    .grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 22px; margin-top: 24px; }
+    .panel {
+      border: 1px solid #dcebe8;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+    }
+    .panel h2 { margin: 0; padding: 18px 20px; font-size: 19px; border-bottom: 1px solid #edf2f7; }
+    .panel-body { padding: 18px; }
+    .role-card {
+      padding: 15px;
+      border-radius: 16px;
+      border: 1px solid #e2ecea;
+      margin-bottom: 12px;
+    }
+    .role-card strong { font-size: 16px; }
+    .role-card p { margin: 7px 0 0; color: #64748b; line-height: 1.5; }
+    .merchant { background: #f3fbf8; border-color: #cdebe4; }
+    .sales { background: #f4faff; border-color: #d2e6f7; }
+    .cashier { background: #fbfdf2; border-color: #e8efc7; }
+    .desktop { background: #ffffff; border-color: #e5e7eb; }
+    .phone {
+      width: 300px;
+      max-width: 100%;
+      margin: 0 auto;
+      border: 1px solid #dbe7e4;
+      border-radius: 30px;
+      background: #f7fbfa;
+      padding: 14px;
+      box-shadow: 0 18px 44px rgba(15,23,42,.14);
+    }
+    .phone-top { display: flex; align-items: center; justify-content: space-between; height: 34px; }
+    .status-pill { font-size: 12px; color: #0f766e; background: #dff6ef; border-radius: 999px; padding: 4px 8px; }
+    .summary {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg,#d9f7ee,#eaf6ff);
+    }
+    .summary p { margin: 0; color: #0f766e; font-size: 12px; }
+    .summary h3 { margin: 8px 0 0; font-size: 22px; color: #0f172a; }
+    .tabs { margin-top: 12px; display: flex; gap: 8px; }
+    .tabs span {
+      flex: 1;
+      text-align: center;
+      background: #fff;
+      border: 1px solid #e0ebe8;
+      border-radius: 999px;
+      padding: 7px 4px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .tabs span:first-child { color: #0f766e; border-color: #b9e3d8; font-weight: 700; }
+    .list { margin-top: 12px; display: grid; gap: 10px; }
+    .item { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 12px; }
+    .item strong { display: block; font-size: 14px; color: #0f172a; }
+    .item p { margin: 6px 0; color: #64748b; font-size: 12px; }
+    .item-row { display: flex; justify-content: space-between; align-items: center; }
+    .money { font-weight: 800; color: #0f766e; }
+    .tag { font-size: 12px; border-radius: 999px; padding: 4px 8px; background: #ecfdf5; color: #047857; }
+    .bottom-nav {
+      margin-top: 14px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 9px;
+      display: flex;
+      justify-content: space-around;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .bottom-nav strong { color: #0f766e; }
+    .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
+    .option { border: 1px solid #dcebe8; border-radius: 16px; background: #fff; padding: 16px; }
+    .option h3 { margin: 0; font-size: 17px; }
+    .option p { margin: 8px 0 0; color: #64748b; line-height: 1.5; }
+    .flow { margin-top: 24px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .step { padding: 14px; border-radius: 14px; background: #fff; border: 1px solid #dcebe8; }
+    .step b { color: #0f766e; }
+    .step p { margin: 6px 0 0; color: #64748b; font-size: 13px; }
+    @media (max-width: 860px) {
+      .grid, .options, .flow { grid-template-columns: 1fr; }
+      .page { padding: 20px 14px 36px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">方案 B · v1.3 UI 改造</p>
+      <h1>移动 H5 重构 + 后台轻优化</h1>
+      <p class="subtitle">商家、业务员、出纳按移动端真实使用场景重构为底部 Tab、卡片列表、纵向详情页；审核员和超级管理员保留电脑后台形态，只做视觉和信息密度优化。</p>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>整体页面结构</h2>
+        <div class="panel-body">
+          <div class="role-card merchant">
+            <strong>商家 H5</strong>
+            <p>入驻 / 凭证 / 我的。只查看商家入驻状态和本商家打款凭证，不进入客户申请、合同、账单、逾期、锁机或解锁。</p>
+          </div>
+          <div class="role-card sales">
+            <strong>业务员 H5</strong>
+            <p>任务 / 验机 / 我的。卡片任务列表，点击后进入纵向详情页，关键操作固定到底部。</p>
+          </div>
+          <div class="role-card cashier">
+            <strong>出纳 H5</strong>
+            <p>待打款 / 已打款 / 我的。突出金额限制、凭证上传、图片/PDF 预览和确认打款。</p>
+          </div>
+          <div class="role-card desktop">
+            <strong>审核员与超级管理员后台</strong>
+            <p>保留表格、详情抽屉、操作面板，不改成 H5；统一浅色视觉、降低遮挡、强化列表扫描。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>移动 H5 通用骨架</h2>
+        <div class="panel-body">
+          <div class="phone">
+            <div class="phone-top">
+              <strong>工作台</strong>
+              <span class="status-pill">在线</span>
+            </div>
+            <div class="summary">
+              <p>今日状态</p>
+              <h3>3 个待处理</h3>
+            </div>
+            <div class="tabs">
+              <span>全部</span>
+              <span>待处理</span>
+              <span>已完成</span>
+            </div>
+            <div class="list">
+              <div class="item">
+                <strong>A202606080001</strong>
+                <p>Apple iPhone 16 Pro</p>
+                <div class="item-row"><span class="money">￥6,800</span><span class="tag">待处理</span></div>
+              </div>
+              <div class="item">
+                <strong>A202606080002</strong>
+                <p>Apple iPhone 15 Pro</p>
+                <div class="item-row"><span class="money">￥4,800</span><span class="tag">已完成</span></div>
+              </div>
+            </div>
+            <div class="bottom-nav"><strong>首页</strong><span>列表</span><span>我的</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="flow">
+      <div class="step"><b>第一阶段</b><p>商家 H5 精修：入驻、凭证、我的。</p></div>
+      <div class="step"><b>第二阶段</b><p>业务员 H5 重构：任务、验机、补资料。</p></div>
+      <div class="step"><b>第三阶段</b><p>出纳 H5 重构：打款、上传、预览。</p></div>
+      <div class="step"><b>第四阶段</b><p>审核员和超管后台视觉统一。</p></div>
+    </section>
+
+    <section class="options">
+      <div class="option">
+        <h3>A. 认可这个结构</h3>
+        <p>按这个信息架构继续写正式 UI 改造 spec，然后进入实施计划。</p>
+      </div>
+      <div class="option">
+        <h3>B. 结构要调整</h3>
+        <p>告诉我哪个角色、哪个 Tab 或哪条测试路径不对，我先改方案。</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

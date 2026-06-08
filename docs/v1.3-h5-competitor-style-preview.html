@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>v1.3 H5 竞品风格改造预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      background: #eef4ff;
+      color: #172b5f;
+    }
+    .page { max-width: 1180px; margin: 0 auto; padding: 28px 18px 46px; }
+    .title { text-align: center; font-size: 28px; margin: 0 0 22px; color: #111827; }
+    .lead {
+      max-width: 920px;
+      margin: 0 auto 24px;
+      line-height: 1.8;
+      color: #485b8c;
+      text-align: center;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+    }
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+      align-items: start;
+    }
+    .phone {
+      background: #dfe8ff;
+      border-radius: 34px;
+      padding: 14px;
+      box-shadow: 0 18px 44px rgba(46, 75, 150, .18);
+      border: 1px solid rgba(255,255,255,.8);
+    }
+    .screen {
+      min-height: 760px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #eaf1ff;
+      border: 1px solid #d7e3ff;
+      position: relative;
+    }
+    .top {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: #111827;
+      background: #fff;
+    }
+    .hero-card {
+      margin: 18px 14px;
+      padding: 22px;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(62, 93, 170, .08);
+    }
+    .hero-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .eyebrow {
+      margin: 0;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+      font-size: 13px;
+      letter-spacing: 5px;
+      color: #6679ba;
+    }
+    h2 { margin: 8px 0 0; font-size: 29px; line-height: 1.15; color: #172b5f; }
+    .lang {
+      min-width: 66px;
+      text-align: center;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #e7ecfb;
+      padding: 10px 8px;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+      font-weight: 800;
+      color: #172b5f;
+      box-shadow: 0 6px 20px rgba(55, 81, 140, .08);
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 22px;
+    }
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: #f1f5ff;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .metric span { display: block; color: #6e7eb3; font-size: 13px; }
+    .metric strong { display: block; margin-top: 10px; color: #253b84; font-size: 22px; }
+    .tabs {
+      margin: 0 14px 14px;
+      background: #fff;
+      border-radius: 22px;
+      padding: 14px 14px 0;
+      overflow-x: auto;
+      white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(62, 93, 170, .06);
+    }
+    .tabs span {
+      display: inline-block;
+      padding: 0 14px 13px;
+      font-size: 16px;
+      color: #5f6681;
+      position: relative;
+    }
+    .tabs span.active { color: #111827; font-weight: 800; }
+    .tabs span.active::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: #ff805c;
+    }
+    .list { display: grid; gap: 14px; padding: 0 14px 86px; }
+    .order-card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(62, 93, 170, .07);
+    }
+    .order-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .order-no span {
+      display: block;
+      color: #6680b8;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .order-no strong { color: #16347d; font-size: 16px; }
+    .status {
+      background: #eef3ff;
+      color: #5675ff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .order-body {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 16px;
+      margin-top: 18px;
+      align-items: center;
+    }
+    .phone-img {
+      height: 92px;
+      border-radius: 16px;
+      background: linear-gradient(145deg, #f8fbff, #eef3ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .device-stack {
+      position: relative;
+      width: 72px;
+      height: 76px;
+    }
+    .device {
+      position: absolute;
+      width: 34px;
+      height: 66px;
+      border-radius: 8px;
+      background: linear-gradient(145deg, #222, #777);
+      box-shadow: 0 8px 16px rgba(15,23,42,.18);
+    }
+    .device::before {
+      content: "";
+      position: absolute;
+      top: 7px;
+      left: 7px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #111;
+      box-shadow: 11px 0 0 #111, 5px 11px 0 #111;
+    }
+    .d1 { left: 0; bottom: 0; transform: rotate(-8deg); background: linear-gradient(145deg, #222, #555); }
+    .d2 { left: 19px; bottom: 2px; background: linear-gradient(145deg, #e7e1d2, #b7a786); }
+    .d3 { left: 38px; bottom: 0; transform: rotate(8deg); background: linear-gradient(145deg, #3d4755, #9aa6b8); }
+    .order-copy h3 { margin: 0 0 10px; font-size: 20px; color: #112a72; }
+    .order-copy p { margin: 0 0 8px; color: #5269aa; line-height: 1.5; font-size: 14px; }
+    .rent { color: #172b5f; font-size: 15px; }
+    .rent b { color: #183f91; font-size: 17px; }
+    .bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 70px;
+      background: rgba(255,255,255,.96);
+      border-top: 1px solid #edf2ff;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 13px;
+      color: #7b849f;
+    }
+    .bottom strong { color: #5874ff; }
+    .notes {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 16px;
+    }
+    .note {
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid #dfe9ff;
+      padding: 18px;
+      line-height: 1.65;
+      font-family: "Microsoft YaHei", system-ui, sans-serif;
+      color: #475569;
+    }
+    .note h3 { margin: 0 0 10px; color: #172b5f; }
+    @media (max-width: 1040px) {
+      .roles { grid-template-columns: 1fr; }
+      .phone { max-width: 420px; margin: 0 auto; }
+      .notes { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="title">v1.3 H5 统一竞品风格</h1>
+    <p class="lead">所有手机 H5 页面统一改成“订单中心式布局”：顶部标题、白色概览卡、横向状态筛选、订单/任务卡片、底部 Tab。不同角色看到不同审核流程和操作按钮。</p>
+
+    <section class="roles">
+      <article class="phone">
+        <div class="screen">
+          <div class="top">我的商家</div>
+          <section class="hero-card">
+            <div class="hero-row">
+              <div>
+                <p class="eyebrow">MERCHANT CENTER</p>
+                <h2>商家中心</h2>
+              </div>
+              <div class="lang">CN</div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>入驻状态</span><strong>已通过</strong></div>
+              <div class="metric"><span>凭证总数</span><strong>3</strong></div>
+            </div>
+          </section>
+          <nav class="tabs"><span class="active">全部</span><span>待确认</span><span>已打款</span><span>已作废</span></nav>
+          <section class="list">
+            <div class="order-card">
+              <div class="order-head"><div class="order-no"><span>凭证编号</span><strong>PV20260608052951</strong></div><span class="status">已打款</span></div>
+              <div class="order-body">
+                <div class="phone-img"><div class="device-stack"><div class="device d1"></div><div class="device d2"></div><div class="device d3"></div></div></div>
+                <div class="order-copy"><h3>Apple iPhone 15 Pro</h3><p>业务编号: A20260530008</p><p>收款主体: 东区旗舰店</p><div class="rent">打款金额 <b>￥6,800</b></div></div>
+              </div>
+            </div>
+          </section>
+          <footer class="bottom"><strong>凭证</strong><span>入驻</span><span>我的</span></footer>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="top">我的任务</div>
+          <section class="hero-card">
+            <div class="hero-row">
+              <div>
+                <p class="eyebrow">TASK CENTER</p>
+                <h2>任务中心</h2>
+              </div>
+              <div class="lang">CN</div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>任务总数</span><strong>8</strong></div>
+              <div class="metric"><span>进行中</span><strong>3</strong></div>
+            </div>
+          </section>
+          <nav class="tabs"><span class="active">全部</span><span>待验机</span><span>验机中</span><span>需补资料</span><span>待审核</span></nav>
+          <section class="list">
+            <div class="order-card">
+              <div class="order-head"><div class="order-no"><span>申请编号</span><strong>A202606080001</strong></div><span class="status">待验机</span></div>
+              <div class="order-body">
+                <div class="phone-img"><div class="device-stack"><div class="device d1"></div><div class="device d2"></div><div class="device d3"></div></div></div>
+                <div class="order-copy"><h3>Apple iPhone 16 Pro Max</h3><p>颜色: 原色; 容量: 256G</p><p>客户: 测试客户张先生</p><div class="rent">贷款金额 <b>￥7,200</b></div></div>
+              </div>
+            </div>
+          </section>
+          <footer class="bottom"><strong>任务</strong><span>验机台</span><span>我的</span></footer>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="top">我的打款</div>
+          <section class="hero-card">
+            <div class="hero-row">
+              <div>
+                <p class="eyebrow">PAYOUT CENTER</p>
+                <h2>打款中心</h2>
+              </div>
+              <div class="lang">CN</div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>待打款</span><strong>2</strong></div>
+              <div class="metric"><span>已打款</span><strong>￥6,800</strong></div>
+            </div>
+          </section>
+          <nav class="tabs"><span class="active">全部</span><span>待打款</span><span>已打款</span><span>凭证异常</span></nav>
+          <section class="list">
+            <div class="order-card">
+              <div class="order-head"><div class="order-no"><span>申请编号</span><strong>A202606080003</strong></div><span class="status">待打款</span></div>
+              <div class="order-body">
+                <div class="phone-img"><div class="device-stack"><div class="device d1"></div><div class="device d2"></div><div class="device d3"></div></div></div>
+                <div class="order-copy"><h3>Apple iPhone 17 Pro Max</h3><p>商家: 东区旗舰店</p><p>凭证: 待上传图片/PDF</p><div class="rent">最高打款 <b>￥9,000</b></div></div>
+              </div>
+            </div>
+          </section>
+          <footer class="bottom"><strong>打款</strong><span>凭证</span><span>我的</span></footer>
+        </div>
+      </article>
+    </section>
+
+    <section class="notes">
+      <div class="note">
+        <h3>审核流程适配</h3>
+        商家看到入驻审核和凭证状态；业务员看到验机审核和补资料；出纳看到打款审核结果和凭证处理；审核员与超管在电脑后台处理审核、商家入驻审核、凭证管理。
+      </div>
+      <div class="note">
+        <h3>图片策略</h3>
+        每个订单/任务卡片加入 iPhone 机型图片。测试版可先使用内置静态机型图，后续生产版再接商品库图片或对象存储图片。
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>v1.3 业务员录单台 H5 预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #eaf1ff;
+      color: #172b5f;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+    }
+    .phone {
+      width: 390px;
+      max-width: 100%;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #e9f0ff 0%, #f7faff 100%);
+      padding-bottom: 86px;
+    }
+    .topbar {
+      height: 52px;
+      display: grid;
+      grid-template-columns: 42px 1fr 64px;
+      align-items: center;
+      padding: 0 10px;
+    }
+    .back {
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 50%;
+      background: #fff;
+      color: #273b82;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(46, 75, 150, .08);
+    }
+    .title { text-align: center; font-size: 18px; font-weight: 900; letter-spacing: 1px; }
+    .lang {
+      justify-self: end;
+      border: 1px solid #dfe7fb;
+      border-radius: 999px;
+      background: #fff;
+      padding: 6px 8px;
+      font: 700 11px/1 "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .intro, .section {
+      margin: 12px 10px;
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid #dfe7fb;
+      box-shadow: 0 8px 22px rgba(46, 75, 150, .06);
+    }
+    .intro { padding: 18px; }
+    .intro .en {
+      margin: 0 0 8px;
+      color: #6b7dbc;
+      letter-spacing: 4px;
+      font: 700 11px/1.2 "Microsoft YaHei", system-ui, sans-serif;
+      text-transform: uppercase;
+    }
+    .intro h1 { margin: 0; font-size: 22px; color: #172b5f; }
+    .intro p { margin: 10px 0 0; color: #6172a5; line-height: 1.65; font-size: 13px; }
+    .section { padding: 14px; }
+    .section h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      color: #172b5f;
+    }
+    .hint { margin: 0 0 12px; color: #6f7faa; line-height: 1.55; font-size: 12px; }
+    .field {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid #e2e9fb;
+      background: #f8faff;
+      border-radius: 10px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      color: #172b5f;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .placeholder {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      color: #99a5c8;
+      background: #fff;
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+    .product-card {
+      margin-top: 12px;
+      background: linear-gradient(180deg, #172b5f 0%, #314c9d 100%);
+      border-radius: 16px;
+      padding: 12px;
+      color: #fff;
+    }
+    .product-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .product-head strong { font-size: 17px; }
+    .currency {
+      background: rgba(255,255,255,.9);
+      color: #172b5f;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font: 800 11px/1 "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .choose {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #fff1cf;
+      color: #172b5f;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .white-field {
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #fff;
+      color: #172b5f;
+    }
+    .white-field label { color: #172b5f; }
+    .device-preview {
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .iphone {
+      height: 72px;
+      border-radius: 12px;
+      background: #f5f8ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stack { position: relative; width: 58px; height: 58px; }
+    .phone-shape {
+      position: absolute;
+      width: 29px;
+      height: 56px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #1d2430, #8b96a7);
+      box-shadow: 0 6px 12px rgba(0,0,0,.18);
+    }
+    .phone-shape::before {
+      content: "";
+      position: absolute;
+      top: 7px;
+      left: 7px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #111;
+      box-shadow: 10px 0 0 #111, 5px 10px 0 #111;
+    }
+    .p1 { left: 0; top: 2px; transform: rotate(-8deg); background: linear-gradient(135deg, #222, #555); }
+    .p2 { left: 15px; top: 0; background: linear-gradient(135deg, #e9dcc5, #b89d74); }
+    .p3 { left: 30px; top: 2px; transform: rotate(8deg); background: linear-gradient(135deg, #343d4c, #a5afc0); }
+    .device-copy h3 { margin: 0 0 6px; font-size: 17px; }
+    .device-copy p { margin: 0; color: #dbe6ff; line-height: 1.45; font-size: 12px; }
+    .summary {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.25);
+      display: grid;
+      gap: 5px;
+      font-size: 12px;
+    }
+    .summary div { display: flex; justify-content: space-between; gap: 12px; }
+    .summary b { color: #fff7c8; }
+    .upload-box {
+      min-height: 92px;
+      border: 1px dashed #cadbd0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #29438c;
+      background: linear-gradient(180deg, #fbfdff, #f1f5ff);
+      font-size: 13px;
+    }
+    .actions {
+      position: sticky;
+      bottom: 66px;
+      margin: 16px 10px 8px;
+      background: rgba(247,250,255,.92);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+    .save, .submit {
+      height: 46px;
+      border: 0;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 15px;
+    }
+    .save { background: #dfe7fb; color: #273b82; }
+    .submit { background: #3f5fd0; color: #fff; }
+    .bottom {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: 390px;
+      max-width: 100%;
+      height: 62px;
+      background: #fff;
+      border-top: 1px solid #e5ebfb;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      color: #7b849f;
+      font-size: 12px;
+      box-shadow: 0 -8px 24px rgba(46,75,150,.08);
+    }
+    .bottom strong { color: #ef7f43; }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <header class="topbar">
+      <button class="back">‹</button>
+      <div class="title">录单台</div>
+      <div class="lang">CN&nbsp;CN</div>
+    </header>
+
+    <section class="intro">
+      <p class="en">Global Intake Workspace</p>
+      <h1>业务员协助录单</h1>
+      <p>业务员到店后，协助客户选择机型、填写资料、上传附件，并提交给审核员处理。</p>
+    </section>
+
+    <section class="section">
+      <h2>基础业务信息</h2>
+      <p class="hint">先确认门店、业务员和基础来源，系统后续会自动带入审核流程。</p>
+      <div class="field"><label>业务员编号</label><div class="placeholder">0001</div></div>
+      <div class="field"><label>选择商家</label><div class="placeholder">请选择商家</div></div>
+      <div class="field"><label>手机型号</label><div class="placeholder">请选择手机型号</div></div>
+    </section>
+
+    <section class="section product-card">
+      <div class="product-head"><strong>方案配置</strong><span class="currency">货币 USD</span></div>
+      <span class="choose">选择方案</span>
+      <div class="white-field">
+        <label>商品信息</label>
+        <div class="device-preview">
+          <div class="iphone">
+            <div class="stack"><div class="phone-shape p1"></div><div class="phone-shape p2"></div><div class="phone-shape p3"></div></div>
+          </div>
+          <div class="device-copy">
+            <h3>Apple iPhone 16 Pro Max</h3>
+            <p>颜色: 原色; 容量: 256G; 预计租期: 210 天</p>
+          </div>
+        </div>
+      </div>
+      <div class="white-field"><label>还款周期</label><div class="placeholder">按月</div></div>
+      <div class="white-field"><label>分期数</label><div class="placeholder">例如: 12</div></div>
+      <div class="white-field"><label>贷款金额</label><div class="placeholder">$ 例如: 299</div></div>
+      <div class="white-field"><label>订单备注</label><div class="placeholder" style="min-height:80px">可填写客户说明、特殊分期安排、业务员现场备注</div></div>
+      <div class="summary">
+        <div><span>客户确认门店</span><b>东区旗舰店</b></div>
+        <div><span>业务员编号</span><b>0001</b></div>
+        <div><span>首付收款</span><b>$ 0.00</b></div>
+        <div><span>贷款金额</span><b>$ 299.00</b></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>客户基础信息</h2>
+      <p class="hint">用于审核客户身份、联系方式和居住信息。</p>
+      <div class="field"><label>客户姓名</label><div class="placeholder">请输入客户姓名</div></div>
+      <div class="field"><label>联系电话</label><div class="placeholder">请输入联系电话</div></div>
+      <div class="field"><label>证件类型</label><div class="placeholder">身份证</div></div>
+      <div class="field"><label>证件号码</label><div class="placeholder">请输入身份证 / 护照号码</div></div>
+      <div class="field"><label>居住地址</label><div class="placeholder">请输入客户常住地址</div></div>
+      <div class="field"><label>工作信息</label><div class="placeholder">公司名称 / 职位 / 工作年限</div></div>
+    </section>
+
+    <section class="section">
+      <h2>紧急联系人</h2>
+      <p class="hint">用于客户联系方式失效时，审核人员进行必要核验。</p>
+      <div class="field"><label>关系</label><div class="placeholder">请选择关系</div></div>
+      <div class="field"><label>联系人姓名</label><div class="placeholder">请输入联系人姓名</div></div>
+      <div class="field"><label>联系电话</label><div class="placeholder">请输入紧急联系人联系电话</div></div>
+    </section>
+
+    <section class="section">
+      <h2>资料上传区</h2>
+      <p class="hint">上传客户证件、工作证明、首付款凭证和补充资料。</p>
+      <div class="field"><label>身份证 / 护照</label><div class="upload-box">+ 上传证件</div></div>
+      <div class="field"><label>工作证明</label><div class="upload-box">+ 上传工作证明</div></div>
+      <div class="field"><label>首付款凭证</label><div class="upload-box">+ 上传付款凭证</div></div>
+      <div class="field"><label>补充资料</label><div class="upload-box">+ 上传补充资料</div></div>
+    </section>
+
+    <section class="actions">
+      <button class="save">保存草稿</button>
+      <button class="submit">提交审核</button>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <span>首页</span>
+    <strong>录单台</strong>
+    <span>我的</span>
+  </footer>
+</body>
+</html>
