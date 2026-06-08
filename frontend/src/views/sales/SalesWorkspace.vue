@@ -384,7 +384,7 @@ onMounted(() => {
 
         <div class="intake-actions">
           <el-button plain @click="saveDraft">保存草稿</el-button>
-          <el-button type="primary" disabled @click="submitIntake">提交申请</el-button>
+          <el-button type="primary" @click="submitIntake">提交申请</el-button>
         </div>
       </section>
     </template>
