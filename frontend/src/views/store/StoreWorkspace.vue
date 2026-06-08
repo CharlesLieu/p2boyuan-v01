@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import H5AppFrame from '../../components/h5/H5AppFrame.vue'
@@ -31,6 +32,7 @@ type StoreTab = 'onboarding' | 'vouchers' | 'mine'
 type VoucherFilter = MerchantVoucherStatus | 'ALL'
 
 const auth = useAuthStore()
+const router = useRouter()
 const activeTab = ref<StoreTab>('vouchers')
 const voucherFilter = ref<VoucherFilter>('ALL')
 const loading = ref(false)
@@ -279,6 +281,11 @@ function errorMessage(error: unknown) {
   return '操作失败，请稍后重试。'
 }
 
+async function handleLogout() {
+  await auth.logout()
+  router.push('/login')
+}
+
 onMounted(() => {
   refresh()
 })
@@ -480,6 +487,11 @@ onMounted(() => {
               <dd>{{ onboardingStatusLabel(onboardingStatus) }}</dd>
             </div>
           </dl>
+        </article>
+
+        <article class="h5-logout-card">
+          <span>退出后需要重新选择角色账号登录。</span>
+          <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
         </article>
       </section>
     </template>

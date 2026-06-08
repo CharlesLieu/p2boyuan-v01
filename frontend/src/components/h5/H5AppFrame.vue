@@ -88,6 +88,31 @@ const emit = defineEmits<{ tabChange: [key: string] }>()
   --el-button-active-border-color: #3651cb;
 }
 
+.h5-app-main :deep(.h5-logout-card) {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--h5-border);
+  border-radius: var(--h5-radius);
+  background: var(--h5-card);
+  box-shadow: var(--h5-shadow);
+}
+
+.h5-app-main :deep(.h5-logout-card span) {
+  color: var(--h5-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.h5-app-main :deep(.h5-logout-card .el-button) {
+  width: 100%;
+  min-height: 44px;
+  margin-left: 0;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
 .h5-bottom-tabs {
   position: fixed;
   right: 0;

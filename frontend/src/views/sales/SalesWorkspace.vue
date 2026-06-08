@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Check, Close, Refresh, VideoPlay } from '@element-plus/icons-vue'
 import ApplicationDetail from '../../components/application/ApplicationDetail.vue'
@@ -22,6 +23,7 @@ import { h5ApplicationStatusLabel, h5Money, h5ProductImage } from '../../utils/h
 
 const applications = useApplicationsStore()
 const auth = useAuthStore()
+const router = useRouter()
 const operating = ref(false)
 const detailVisible = ref(false)
 const activeTab = ref<'tasks' | 'intake' | 'mine'>('tasks')
@@ -202,6 +204,11 @@ function submitSupplement() {
       '业务员补充资料已提交。',
     )
   }
+}
+
+async function handleLogout() {
+  await auth.logout()
+  router.push('/login')
 }
 
 function errorMessage(error: unknown) {
@@ -391,6 +398,11 @@ onMounted(() => {
             <strong>业务员</strong>
           </div>
           <p>处理平台指派的验机与补资料任务。</p>
+        </article>
+
+        <article class="h5-logout-card">
+          <span>退出后需要重新选择角色账号登录。</span>
+          <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
         </article>
       </section>
     </template>

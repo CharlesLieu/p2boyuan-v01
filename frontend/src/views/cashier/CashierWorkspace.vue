@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Money, Refresh } from '@element-plus/icons-vue'
 import H5AppFrame from '../../components/h5/H5AppFrame.vue'
@@ -15,6 +16,7 @@ import {
   type AttachmentInfo,
   type PayoutRecord,
 } from '../../api/modules/applications'
+import { useAuthStore } from '../../stores/auth'
 import { h5Money, h5ProductImage } from '../../utils/h5Format'
 
 type CashierTab = 'payouts' | 'vouchers' | 'mine'
@@ -30,6 +32,8 @@ const voucherInput = ref<HTMLInputElement | null>(null)
 const voucherAttachment = ref<AttachmentInfo | null>(null)
 const activeTab = ref<CashierTab>('payouts')
 const payoutFilter = ref<PayoutStatusFilter>('ALL')
+const auth = useAuthStore()
+const router = useRouter()
 
 const cashierTabs = [
   { key: 'payouts', label: '打款' },
@@ -204,6 +208,11 @@ function previewVoucher() {
   if (voucherPreviewUrl.value) {
     window.open(voucherPreviewUrl.value, '_blank', 'noopener,noreferrer')
   }
+}
+
+async function handleLogout() {
+  await auth.logout()
+  router.push('/login')
 }
 
 async function handleVoucherChange(event: Event) {
@@ -415,13 +424,18 @@ onMounted(() => {
         <article class="profile-card">
           <div>
             <span>当前账号</span>
-            <strong>cashier001</strong>
+            <strong>{{ auth.user?.username ?? 'cashier001' }}</strong>
           </div>
           <div>
             <span>岗位角色</span>
             <strong>出纳</strong>
           </div>
           <p>处理待打款订单，上传并确认打款凭证。</p>
+        </article>
+
+        <article class="h5-logout-card">
+          <span>退出后需要重新选择角色账号登录。</span>
+          <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
         </article>
       </section>
     </template>
