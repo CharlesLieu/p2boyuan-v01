@@ -220,6 +220,7 @@ function validateOnboardingForm() {
     onboardingForm.merchantAddress,
     onboardingForm.contactName,
     onboardingForm.contactPhone,
+    onboardingForm.paymentMethod,
     onboardingForm.paymentAccount,
     onboardingForm.paymentAccountName,
   ].every((value) => String(value ?? '').trim().length > 0)
