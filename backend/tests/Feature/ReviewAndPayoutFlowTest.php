@@ -105,7 +105,7 @@ class ReviewAndPayoutFlowTest extends TestCase
         ]);
     }
 
-    public function test_auditor_requests_supplement_then_owner_submits_back_to_review(): void
+    public function test_store_cannot_be_assigned_or_submit_application_supplement(): void
     {
         $this->seed(DemoSeeder::class);
 
@@ -118,13 +118,11 @@ class ReviewAndPayoutFlowTest extends TestCase
                 'ownerRole' => UserRole::STORE->value,
                 'note' => '请门店补充客户地址证明。',
             ])
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.application.status', ApplicationStatus::NEEDS_SUPPLEMENT->value)
-            ->assertJsonPath('data.application.currentOwnerRole', UserRole::STORE->value)
-            ->assertJsonPath('data.reviewRecord.action', 'REQUEST_SUPPLEMENT');
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR');
 
-        $submit = $this->actingAs($store, 'sanctum')
+        $this->actingAs($store, 'sanctum')
             ->postJson("/api/v1/applications/{$application->id}/supplement", [
                 'note' => '已补充客户地址证明。',
                 'attachments' => [
@@ -135,20 +133,10 @@ class ReviewAndPayoutFlowTest extends TestCase
                         'fileSize' => 88000,
                     ],
                 ],
-            ]);
-
-        $submit
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.application.status', ApplicationStatus::PENDING_REVIEW->value)
-            ->assertJsonPath('data.application.currentOwnerRole', UserRole::AUDITOR->value)
-            ->assertJsonPath('data.attachments.0.fileName', 'address-proof.png');
-
-        $this->assertDatabaseHas('attachments', [
-            'application_id' => $application->id,
-            'module' => 'SUPPLEMENT',
-            'file_name' => 'address-proof.png',
-        ]);
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
     }
 
     public function test_sales_supplement_can_only_be_submitted_by_current_owner_user(): void

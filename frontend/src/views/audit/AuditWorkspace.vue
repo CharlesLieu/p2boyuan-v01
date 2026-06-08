@@ -21,7 +21,7 @@ const salesAgentId = ref('')
 const assignRemark = ref('请业务员到店完成设备验机并协助客户补齐申报资料。')
 const reviewNote = ref('资料完整，验机结果符合放款要求。')
 const rejectNote = ref('资料与验机结果不符合审核要求，本次申请驳回。')
-const supplementOwnerRole = ref<'STORE' | 'SALES'>('STORE')
+const supplementOwnerRole = ref<'SALES'>('SALES')
 const supplementNote = ref('请补充客户资料、设备照片或验机说明后重新提交。')
 
 const selected = computed(() => applications.selected)
@@ -196,7 +196,6 @@ onMounted(() => {
       <div class="operator-column">
         <h3>要求补资料</h3>
         <el-radio-group v-model="supplementOwnerRole">
-          <el-radio-button label="STORE">门店</el-radio-button>
           <el-radio-button label="SALES">业务员</el-radio-button>
         </el-radio-group>
         <el-input v-model="supplementNote" type="textarea" :rows="2" />

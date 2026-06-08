@@ -114,7 +114,7 @@ class AdminDemoTest extends TestCase
                 'status' => ApplicationStatus::PENDING_REVIEW->value,
                 'currentOwnerRole' => UserRole::AUDITOR->value,
                 'currentOwnerUserId' => $this->user('audit001')->id,
-                'remark' => '路演手动调整到待审核。',
+                'remark' => '测试手动调整到待审核。',
             ])
             ->assertOk()
             ->assertJsonPath('success', true)
@@ -134,7 +134,7 @@ class AdminDemoTest extends TestCase
             'actor_role' => UserRole::SUPER_ADMIN->value,
             'from_status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
             'to_status' => ApplicationStatus::PENDING_REVIEW->value,
-            'message' => '路演手动调整到待审核。',
+            'message' => '测试手动调整到待审核。',
         ]);
     }
 
@@ -143,12 +143,12 @@ class AdminDemoTest extends TestCase
         Storage::fake('public');
         $this->seed(DemoSeeder::class);
 
-        $store = $this->user('store001');
+        $auditor = $this->user('audit001');
         $application = Application::query()
             ->where('application_no', 'A20260530001')
             ->firstOrFail();
 
-        $response = $this->actingAs($store, 'sanctum')
+        $response = $this->actingAs($auditor, 'sanctum')
             ->postJson('/api/v1/attachments', [
                 'applicationId' => $application->id,
                 'module' => 'APPLICATION',
@@ -174,12 +174,12 @@ class AdminDemoTest extends TestCase
         Storage::fake('public');
         $this->seed(DemoSeeder::class);
 
-        $store = $this->user('store001');
+        $auditor = $this->user('audit001');
         $application = Application::query()
             ->where('application_no', 'A20260530001')
             ->firstOrFail();
 
-        $this->actingAs($store, 'sanctum')
+        $this->actingAs($auditor, 'sanctum')
             ->postJson('/api/v1/attachments', [
                 'applicationId' => $application->id,
                 'module' => 'APPLICATION',
@@ -194,32 +194,7 @@ class AdminDemoTest extends TestCase
         ]);
     }
 
-    public function test_store_cannot_upload_attachment_to_other_store_application(): void
-    {
-        Storage::fake('public');
-        $this->seed(DemoSeeder::class);
-
-        $store = $this->user('store001');
-        $otherStoreApplication = Application::query()
-            ->where('application_no', 'A20260530002')
-            ->firstOrFail();
-
-        $this->actingAs($store, 'sanctum')
-            ->postJson('/api/v1/attachments', [
-                'applicationId' => $otherStoreApplication->id,
-                'module' => 'APPLICATION',
-                'file' => UploadedFile::fake()->create('other-store.png', 128, 'image/png'),
-            ])
-            ->assertForbidden()
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
-
-        $this->assertDatabaseMissing('attachments', [
-            'file_name' => 'other-store.png',
-        ]);
-    }
-
-    public function test_attachment_upload_rejects_invalid_module(): void
+    public function test_store_cannot_upload_customer_application_attachment(): void
     {
         Storage::fake('public');
         $this->seed(DemoSeeder::class);
@@ -230,6 +205,31 @@ class AdminDemoTest extends TestCase
             ->firstOrFail();
 
         $this->actingAs($store, 'sanctum')
+            ->postJson('/api/v1/attachments', [
+                'applicationId' => $application->id,
+                'module' => 'APPLICATION',
+                'file' => UploadedFile::fake()->create('store-application.png', 128, 'image/png'),
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
+
+        $this->assertDatabaseMissing('attachments', [
+            'file_name' => 'store-application.png',
+        ]);
+    }
+
+    public function test_attachment_upload_rejects_invalid_module(): void
+    {
+        Storage::fake('public');
+        $this->seed(DemoSeeder::class);
+
+        $auditor = $this->user('audit001');
+        $application = Application::query()
+            ->where('application_no', 'A20260530001')
+            ->firstOrFail();
+
+        $this->actingAs($auditor, 'sanctum')
             ->postJson('/api/v1/attachments', [
                 'applicationId' => $application->id,
                 'module' => 'RANDOM_MODULE',

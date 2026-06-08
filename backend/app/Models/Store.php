@@ -18,6 +18,11 @@ class Store extends Model
         'contact_phone',
         'address',
         'status',
+        'onboarding_status',
+        'payment_method',
+        'payment_account',
+        'payment_account_name',
+        'payment_bank_or_channel',
     ];
 
     public function users(): HasMany
@@ -28,5 +33,15 @@ class Store extends Model
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
+    }
+
+    public function onboardingApplications(): HasMany
+    {
+        return $this->hasMany(MerchantOnboardingApplication::class);
+    }
+
+    public function merchantPaymentVouchers(): HasMany
+    {
+        return $this->hasMany(MerchantPaymentVoucher::class);
     }
 }

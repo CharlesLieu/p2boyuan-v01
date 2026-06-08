@@ -14,57 +14,23 @@ class ApplicationStoreTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_store_user_can_create_application_with_status_log(): void
+    public function test_store_user_cannot_create_customer_application(): void
     {
         $this->seed(DemoSeeder::class);
         $store = User::query()->where('username', 'store001')->firstOrFail();
 
-        $response = $this->actingAs($store, 'sanctum')
-            ->postJson('/api/v1/applications', $this->validPayload());
-
-        $response
-            ->assertCreated()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.application.status', ApplicationStatus::PENDING_ASSIGNMENT->value)
-            ->assertJsonPath('data.application.currentOwnerRole', UserRole::AUDITOR->value)
-            ->assertJsonPath('data.application.customerName', '彩排客户')
-            ->assertJsonStructure([
-                'data' => [
-                    'application' => [
-                        'id',
-                        'applicationNo',
-                        'storeId',
-                        'customerName',
-                        'status',
-                        'currentOwnerRole',
-                    ],
-                ],
-                'message',
-                'requestId',
-            ]);
-
-        $applicationId = $response->json('data.application.id');
-
-        $this->assertDatabaseHas('applications', [
-            'id' => $applicationId,
-            'store_id' => $store->store_id,
-            'created_by_user_id' => $store->id,
-            'status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
-            'current_owner_role' => UserRole::AUDITOR->value,
-        ]);
-
-        $this->assertDatabaseHas('status_logs', [
-            'application_id' => $applicationId,
-            'actor_user_id' => $store->id,
-            'to_status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
-        ]);
+        $this->actingAs($store, 'sanctum')
+            ->postJson('/api/v1/applications', $this->validPayload())
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
     }
 
-    public function test_only_store_or_super_admin_can_create_application(): void
+    public function test_only_super_admin_can_create_customer_application_for_demo_support(): void
     {
         $this->seed(DemoSeeder::class);
 
-        foreach (['audit001', 'sales001', 'cashier001'] as $username) {
+        foreach (['store001', 'audit001', 'sales001', 'cashier001'] as $username) {
             $user = User::query()->where('username', $username)->firstOrFail();
 
             $this->actingAs($user, 'sanctum')
@@ -73,28 +39,38 @@ class ApplicationStoreTest extends TestCase
                 ->assertJsonPath('success', false)
                 ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
         }
+
+        $admin = User::query()->where('username', 'admin001')->firstOrFail();
+        $store = User::query()->where('username', 'store001')->firstOrFail();
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/v1/applications', [
+                ...$this->validPayload(),
+                'storeId' => $store->store_id,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.application.status', ApplicationStatus::PENDING_ASSIGNMENT->value);
     }
 
-    public function test_store_cannot_view_other_store_application(): void
+    public function test_store_cannot_view_customer_application_detail_or_logs(): void
     {
         $this->seed(DemoSeeder::class);
 
         $store = User::query()->where('username', 'store001')->firstOrFail();
-        $otherApplication = Application::query()
-            ->where('store_id', '!=', $store->store_id)
-            ->firstOrFail();
+        $application = Application::query()->firstOrFail();
 
         $this->actingAs($store, 'sanctum')
-            ->getJson("/api/v1/applications/{$otherApplication->id}")
-            ->assertNotFound()
+            ->getJson("/api/v1/applications/{$application->id}")
+            ->assertForbidden()
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error.code', 'APPLICATION_NOT_FOUND');
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
 
         $this->actingAs($store, 'sanctum')
-            ->getJson("/api/v1/applications/{$otherApplication->id}/logs")
-            ->assertNotFound()
+            ->getJson("/api/v1/applications/{$application->id}/logs")
+            ->assertForbidden()
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error.code', 'APPLICATION_NOT_FOUND');
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
     }
 
     public function test_application_index_filters_by_role(): void
@@ -106,14 +82,11 @@ class ApplicationStoreTest extends TestCase
         $cashier = User::query()->where('username', 'cashier001')->firstOrFail();
         $auditor = User::query()->where('username', 'audit001')->firstOrFail();
 
-        $storeItems = $this->actingAs($store, 'sanctum')
+        $this->actingAs($store, 'sanctum')
             ->getJson('/api/v1/applications')
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->json('data.items');
-
-        $this->assertNotEmpty($storeItems);
-        $this->assertTrue(collect($storeItems)->every(fn ($item) => $item['storeId'] === $store->store_id));
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
 
         $salesItems = $this->actingAs($sales, 'sanctum')
             ->getJson('/api/v1/applications')
@@ -142,16 +115,14 @@ class ApplicationStoreTest extends TestCase
         $this->assertCount(8, $auditorItems);
     }
 
-    public function test_logs_return_application_status_history(): void
+    public function test_authorized_back_office_user_can_read_application_status_history(): void
     {
         $this->seed(DemoSeeder::class);
 
-        $store = User::query()->where('username', 'store001')->firstOrFail();
-        $application = Application::query()
-            ->where('store_id', $store->store_id)
-            ->firstOrFail();
+        $auditor = User::query()->where('username', 'audit001')->firstOrFail();
+        $application = Application::query()->firstOrFail();
 
-        $this->actingAs($store, 'sanctum')
+        $this->actingAs($auditor, 'sanctum')
             ->getJson("/api/v1/applications/{$application->id}/logs")
             ->assertOk()
             ->assertJsonPath('success', true)

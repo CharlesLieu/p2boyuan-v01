@@ -217,7 +217,7 @@ onMounted(() => {
       <div>
         <el-tag type="danger" effect="plain">打款确认</el-tag>
         <h2>出纳工作台</h2>
-        <p>出纳查看待放款记录，确认打款金额和时间，并登记打款凭证供门店查看。</p>
+        <p>出纳查看待放款记录，确认打款金额和时间，并登记打款凭证供商家查看。</p>
       </div>
       <el-button :icon="Refresh" plain @click="fetchPayouts">刷新</el-button>
     </div>

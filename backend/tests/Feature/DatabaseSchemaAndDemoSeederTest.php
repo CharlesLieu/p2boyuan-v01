@@ -43,6 +43,8 @@ class DatabaseSchemaAndDemoSeederTest extends TestCase
     {
         foreach ([
             'stores',
+            'merchant_onboarding_applications',
+            'merchant_payment_vouchers',
             'sales_agents',
             'applications',
             'inspection_tasks',
@@ -64,6 +66,47 @@ class DatabaseSchemaAndDemoSeederTest extends TestCase
             'last_login_at',
         ] as $column) {
             $this->assertTrue(Schema::hasColumn('users', $column), "users.{$column} is missing");
+        }
+
+        foreach ([
+            'onboarding_status',
+            'payment_method',
+            'payment_account',
+            'payment_account_name',
+            'payment_bank_or_channel',
+        ] as $column) {
+            $this->assertTrue(Schema::hasColumn('stores', $column), "stores.{$column} is missing");
+        }
+
+        foreach ([
+            'store_id',
+            'applicant_name',
+            'applicant_phone',
+            'merchant_name',
+            'payment_account',
+            'id_card_front_file',
+            'id_card_back_file',
+            'qualification_file',
+            'status',
+            'reviewer_user_id',
+            'reject_reason',
+        ] as $column) {
+            $this->assertTrue(Schema::hasColumn('merchant_onboarding_applications', $column), "merchant_onboarding_applications.{$column} is missing");
+        }
+
+        foreach ([
+            'voucher_no',
+            'store_id',
+            'related_business_no',
+            'amount',
+            'status',
+            'paid_at',
+            'payee_name',
+            'payee_account_masked',
+            'voucher_file',
+            'void_reason',
+        ] as $column) {
+            $this->assertTrue(Schema::hasColumn('merchant_payment_vouchers', $column), "merchant_payment_vouchers.{$column} is missing");
         }
 
         foreach ([
@@ -153,6 +196,7 @@ class DatabaseSchemaAndDemoSeederTest extends TestCase
         $this->seed(DemoSeeder::class);
 
         $this->assertSame(2, DB::table('stores')->count());
+        $this->assertSame(2, DB::table('merchant_onboarding_applications')->count());
         $this->assertSame(2, DB::table('sales_agents')->count());
         $this->assertSame(7, DB::table('users')->count());
 
@@ -178,7 +222,14 @@ class DatabaseSchemaAndDemoSeederTest extends TestCase
         $this->assertGreaterThanOrEqual(3, DB::table('inspection_tasks')->count());
         $this->assertGreaterThanOrEqual(4, DB::table('review_records')->count());
         $this->assertGreaterThanOrEqual(2, DB::table('payout_records')->count());
+        $this->assertGreaterThanOrEqual(3, DB::table('merchant_payment_vouchers')->count());
         $this->assertGreaterThanOrEqual(8, DB::table('attachments')->count());
         $this->assertGreaterThanOrEqual(8, DB::table('status_logs')->count());
+
+        $this->assertDatabaseHas('stores', ['store_code' => 'STORE-001', 'onboarding_status' => 'APPROVED']);
+        $this->assertDatabaseHas('stores', ['store_code' => 'STORE-002', 'onboarding_status' => 'REJECTED']);
+        $this->assertDatabaseHas('merchant_payment_vouchers', ['status' => 'PAID']);
+        $this->assertDatabaseHas('merchant_payment_vouchers', ['status' => 'PENDING_CONFIRMATION']);
+        $this->assertDatabaseHas('merchant_payment_vouchers', ['status' => 'VOIDED']);
     }
 }

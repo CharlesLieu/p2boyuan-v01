@@ -203,7 +203,7 @@ class AdminController extends Controller
             ApplicationStatus::PENDING_REVIEW->value => [UserRole::AUDITOR->value],
             ApplicationStatus::ASSIGNED->value,
             ApplicationStatus::INSPECTION_IN_PROGRESS->value => [UserRole::SALES->value],
-            ApplicationStatus::NEEDS_SUPPLEMENT->value => [UserRole::STORE->value, UserRole::SALES->value],
+            ApplicationStatus::NEEDS_SUPPLEMENT->value => [UserRole::SALES->value],
             ApplicationStatus::PENDING_PAYOUT->value => [UserRole::CASHIER->value],
             default => [],
         };
@@ -230,10 +230,6 @@ class AdminController extends Controller
 
         if ($this->roleValue($owner) !== $ownerRole) {
             $validator->errors()->add('currentOwnerUserId', '当前处理人角色与 currentOwnerRole 不匹配。');
-        }
-
-        if ($ownerRole === UserRole::STORE->value && $owner->store_id !== $application->store_id) {
-            $validator->errors()->add('currentOwnerUserId', '门店处理人必须属于该申请门店。');
         }
 
         if ($ownerRole === UserRole::SALES->value) {

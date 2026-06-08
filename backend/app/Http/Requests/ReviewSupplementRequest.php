@@ -30,7 +30,7 @@ class ReviewSupplementRequest extends FormRequest
     public static function rulesDefinition(): array
     {
         return [
-            'ownerRole' => ['required', 'string', Rule::in([UserRole::STORE->value, UserRole::SALES->value])],
+            'ownerRole' => ['required', 'string', Rule::in([UserRole::SALES->value])],
             'note' => ['required', 'string', 'max:4000'],
         ];
     }

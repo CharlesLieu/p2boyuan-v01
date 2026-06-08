@@ -240,7 +240,7 @@ export async function rejectApplication(applicationId: string, note: string) {
 
 export async function requestApplicationSupplement(
   applicationId: string,
-  payload: { ownerRole: 'STORE' | 'SALES'; note: string },
+  payload: { ownerRole: 'SALES'; note: string },
 ) {
   const response = await apiClient.post<ApiEnvelope<{ application: ApplicationItem }>>(
     `/applications/${applicationId}/request-supplement`,

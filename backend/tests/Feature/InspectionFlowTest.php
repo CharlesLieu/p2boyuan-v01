@@ -186,12 +186,12 @@ class InspectionFlowTest extends TestCase
 
         $this->actingAs($sales, 'sanctum')
             ->postJson("/api/v1/inspection-tasks/{$task->id}/reject", [
-                'reason' => '客户身份证照片不清晰，需要门店补充资料。',
+                'reason' => '客户身份证照片不清晰，需要业务员补充资料。',
             ])
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.application.status', ApplicationStatus::NEEDS_SUPPLEMENT->value)
-            ->assertJsonPath('data.application.currentOwnerRole', UserRole::STORE->value)
+            ->assertJsonPath('data.application.currentOwnerRole', UserRole::SALES->value)
             ->assertJsonPath('data.inspectionTask.status', 'REJECTED');
     }
 }

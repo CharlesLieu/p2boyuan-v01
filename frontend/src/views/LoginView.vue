@@ -7,7 +7,7 @@ import axios from 'axios'
 import { useAuthStore } from '../stores/auth'
 
 const quickAccounts = [
-  { username: 'store001', label: '店家', description: '提交申请与补资料' },
+  { username: 'store001', label: '商家', description: '入驻与凭证查看' },
   { username: 'sales001', label: '业务员', description: '到店验机与资料协助' },
   { username: 'audit001', label: '审核员', description: '派单、审核、驳回' },
   { username: 'cashier001', label: '出纳', description: '打款与上传凭证' },
@@ -57,7 +57,7 @@ async function submitLogin() {
         <p class="eyebrow">v0.1 业务测试版</p>
         <h1>回收金融业务流程系统</h1>
         <p class="hero-subtitle">
-          店家、业务员、审核、出纳、超级管理员五个角色协同处理从申请、验机、审核到打款凭证推送的业务闭环。
+          商家、业务员、审核、出纳、超级管理员五个角色协同处理从验机、审核到打款凭证查看的业务闭环。
         </p>
         <div class="hero-metrics">
           <div>

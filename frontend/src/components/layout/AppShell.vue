@@ -9,7 +9,7 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const navItems = [
-  { path: '/store', label: '店家', role: 'STORE' },
+  { path: '/store', label: '商家', role: 'STORE' },
   { path: '/sales', label: '业务员', role: 'SALES' },
   { path: '/audit', label: '审核', role: 'AUDITOR' },
   { path: '/cashier', label: '出纳', role: 'CASHIER' },

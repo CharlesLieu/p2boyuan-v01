@@ -15,11 +15,13 @@ class DemoSeeder extends Seeder
     {
         DB::transaction(function () {
             DB::table('status_logs')->delete();
+            DB::table('merchant_payment_vouchers')->delete();
             DB::table('payout_records')->delete();
             DB::table('attachments')->delete();
             DB::table('review_records')->delete();
             DB::table('inspection_tasks')->delete();
             DB::table('applications')->delete();
+            DB::table('merchant_onboarding_applications')->delete();
             DB::table('users')->delete();
             DB::table('sales_agents')->delete();
             DB::table('stores')->delete();
@@ -32,8 +34,38 @@ class DemoSeeder extends Seeder
             ];
 
             DB::table('stores')->insert([
-                ['id' => $stores['STORE-001'], 'store_code' => 'STORE-001', 'name' => '东区旗舰店', 'contact_name' => '测试店长A', 'contact_phone' => '0900-STORE-001', 'address' => '测试门店地址 1', 'status' => 'ACTIVE', 'created_at' => $now, 'updated_at' => $now],
-                ['id' => $stores['STORE-002'], 'store_code' => 'STORE-002', 'name' => '南区合作店', 'contact_name' => '测试店长B', 'contact_phone' => '0900-STORE-002', 'address' => '测试门店地址 2', 'status' => 'ACTIVE', 'created_at' => $now, 'updated_at' => $now],
+                [
+                    'id' => $stores['STORE-001'],
+                    'store_code' => 'STORE-001',
+                    'name' => '东区旗舰店',
+                    'contact_name' => '测试店长A',
+                    'contact_phone' => '0900-STORE-001',
+                    'address' => '测试门店地址 1',
+                    'status' => 'ACTIVE',
+                    'onboarding_status' => 'APPROVED',
+                    'payment_method' => 'BANK',
+                    'payment_account' => '6222000099998888',
+                    'payment_account_name' => '东区旗舰店',
+                    'payment_bank_or_channel' => '测试银行',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $stores['STORE-002'],
+                    'store_code' => 'STORE-002',
+                    'name' => '南区合作店',
+                    'contact_name' => '测试店长B',
+                    'contact_phone' => '0900-STORE-002',
+                    'address' => '测试门店地址 2',
+                    'status' => 'ACTIVE',
+                    'onboarding_status' => 'REJECTED',
+                    'payment_method' => 'BANK',
+                    'payment_account' => '6222000011112222',
+                    'payment_account_name' => '南区合作店',
+                    'payment_bank_or_channel' => '测试银行',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
             ]);
 
             $salesAgents = [
@@ -67,15 +99,68 @@ class DemoSeeder extends Seeder
                 ]);
             }
 
+            DB::table('merchant_onboarding_applications')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'store_id' => $stores['STORE-001'],
+                    'applicant_name' => '测试店长A',
+                    'applicant_phone' => '0900-STORE-001',
+                    'applicant_id_number' => 'MERCHANT-ID-001',
+                    'merchant_name' => '东区旗舰店',
+                    'merchant_address' => '测试门店地址 1',
+                    'contact_name' => '测试店长A',
+                    'contact_phone' => '0900-STORE-001',
+                    'payment_method' => 'BANK',
+                    'payment_account' => '6222000099998888',
+                    'payment_account_name' => '东区旗舰店',
+                    'payment_bank_or_channel' => '测试银行',
+                    'id_card_front_file' => json_encode($this->demoFile('merchant/store001-id-front.png')),
+                    'id_card_back_file' => json_encode($this->demoFile('merchant/store001-id-back.png')),
+                    'qualification_file' => json_encode($this->demoFile('merchant/store001-license.pdf', 'application/pdf')),
+                    'status' => 'APPROVED',
+                    'reviewer_user_id' => $users['admin001'],
+                    'reviewed_at' => $now->copy()->subDays(2),
+                    'review_note' => '商家资料齐全，准入通过。',
+                    'reject_reason' => null,
+                    'created_at' => $now->copy()->subDays(3),
+                    'updated_at' => $now->copy()->subDays(2),
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'store_id' => $stores['STORE-002'],
+                    'applicant_name' => '测试店长B',
+                    'applicant_phone' => '0900-STORE-002',
+                    'applicant_id_number' => 'MERCHANT-ID-002',
+                    'merchant_name' => '南区合作店',
+                    'merchant_address' => '测试门店地址 2',
+                    'contact_name' => '测试店长B',
+                    'contact_phone' => '0900-STORE-002',
+                    'payment_method' => 'BANK',
+                    'payment_account' => '6222000011112222',
+                    'payment_account_name' => '南区合作店',
+                    'payment_bank_or_channel' => '测试银行',
+                    'id_card_front_file' => json_encode($this->demoFile('merchant/store002-id-front.png')),
+                    'id_card_back_file' => json_encode($this->demoFile('merchant/store002-id-back.png')),
+                    'qualification_file' => json_encode($this->demoFile('merchant/store002-license.pdf', 'application/pdf')),
+                    'status' => 'REJECTED',
+                    'reviewer_user_id' => $users['admin001'],
+                    'reviewed_at' => $now->copy()->subDay(),
+                    'review_note' => null,
+                    'reject_reason' => '收款主体与门店资质名称不一致，请重新提交。',
+                    'created_at' => $now->copy()->subDays(2),
+                    'updated_at' => $now->copy()->subDay(),
+                ],
+            ]);
+
             $applications = [
                 ['no' => 'A20260530001', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::AUDITOR->value, 'owner' => 'audit001', 'status' => ApplicationStatus::PENDING_ASSIGNMENT->value, 'customer' => '测试客户张先生', 'phone' => '0900-000-001', 'id_no' => 'TEST-ID-001', 'address' => '测试地址 1 号', 'brand' => 'Apple', 'model' => 'iPhone 16 Pro', 'color' => '沙漠金', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-001', 'condition' => '外观轻微使用痕迹', 'sale_price' => 8999, 'loan_amount' => 7200, 'periods' => 12, 'agent' => null, 'task_status' => null],
                 ['no' => 'A20260530002', 'store' => 'STORE-002', 'creator' => 'store002', 'owner_role' => UserRole::SALES->value, 'owner' => 'sales001', 'status' => ApplicationStatus::ASSIGNED->value, 'customer' => '测试客户李女士', 'phone' => '0900-000-002', 'id_no' => 'TEST-ID-002', 'address' => '测试地址 2 号', 'brand' => 'Apple', 'model' => 'iPhone 15', 'color' => '黑色', 'capacity' => '128GB', 'imei' => 'TEST-IMEI-002', 'condition' => '外观良好', 'sale_price' => 5999, 'loan_amount' => 4800, 'periods' => 9, 'agent' => 'SALES-001', 'task_status' => 'ASSIGNED'],
                 ['no' => 'A20260530003', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::SALES->value, 'owner' => 'sales002', 'status' => ApplicationStatus::INSPECTION_IN_PROGRESS->value, 'customer' => '测试客户王先生', 'phone' => '0900-000-003', 'id_no' => 'TEST-ID-003', 'address' => '测试地址 3 号', 'brand' => 'Apple', 'model' => 'iPhone 16', 'color' => '白色', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-003', 'condition' => '待确认', 'sale_price' => 7999, 'loan_amount' => 6200, 'periods' => 12, 'agent' => 'SALES-002', 'task_status' => 'IN_PROGRESS'],
                 ['no' => 'A20260530004', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::AUDITOR->value, 'owner' => 'audit001', 'status' => ApplicationStatus::PENDING_REVIEW->value, 'customer' => '测试客户陈女士', 'phone' => '0900-000-004', 'id_no' => 'TEST-ID-004', 'address' => '测试地址 4 号', 'brand' => 'Apple', 'model' => 'iPhone 14 Pro', 'color' => '紫色', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-004', 'condition' => '外观良好', 'sale_price' => 6999, 'loan_amount' => 5500, 'periods' => 9, 'agent' => 'SALES-001', 'task_status' => 'SUBMITTED'],
-                ['no' => 'A20260530005', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::STORE->value, 'owner' => 'store001', 'status' => ApplicationStatus::NEEDS_SUPPLEMENT->value, 'customer' => '测试客户周女士', 'phone' => '0900-000-005', 'id_no' => 'TEST-ID-005', 'address' => '测试地址 5 号', 'brand' => 'Apple', 'model' => 'iPhone 15 Pro', 'color' => '蓝色', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-005', 'condition' => '验机通过', 'sale_price' => 7599, 'loan_amount' => 6000, 'periods' => 12, 'agent' => 'SALES-001', 'task_status' => 'SUBMITTED'],
+                ['no' => 'A20260530005', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::SALES->value, 'owner' => 'sales001', 'status' => ApplicationStatus::NEEDS_SUPPLEMENT->value, 'customer' => '测试客户周女士', 'phone' => '0900-000-005', 'id_no' => 'TEST-ID-005', 'address' => '测试地址 5 号', 'brand' => 'Apple', 'model' => 'iPhone 15 Pro', 'color' => '蓝色', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-005', 'condition' => '验机通过', 'sale_price' => 7599, 'loan_amount' => 6000, 'periods' => 12, 'agent' => 'SALES-001', 'task_status' => 'SUBMITTED'],
                 ['no' => 'A20260530006', 'store' => 'STORE-002', 'creator' => 'store002', 'owner_role' => UserRole::AUDITOR->value, 'owner' => 'audit001', 'status' => ApplicationStatus::REJECTED->value, 'customer' => '测试客户孙先生', 'phone' => '0900-000-006', 'id_no' => 'TEST-ID-006', 'address' => '测试地址 6 号', 'brand' => 'Apple', 'model' => 'iPhone 13', 'color' => '绿色', 'capacity' => '128GB', 'imei' => 'TEST-IMEI-006', 'condition' => '屏幕有明显划痕', 'sale_price' => 4599, 'loan_amount' => 3600, 'periods' => 6, 'agent' => 'SALES-002', 'task_status' => 'SUBMITTED'],
                 ['no' => 'A20260530007', 'store' => 'STORE-002', 'creator' => 'store002', 'owner_role' => UserRole::CASHIER->value, 'owner' => 'cashier001', 'status' => ApplicationStatus::PENDING_PAYOUT->value, 'customer' => '测试客户赵先生', 'phone' => '0900-000-007', 'id_no' => 'TEST-ID-007', 'address' => '测试地址 7 号', 'brand' => 'Apple', 'model' => 'iPhone 16 Pro Max', 'color' => '原色', 'capacity' => '512GB', 'imei' => 'TEST-IMEI-007', 'condition' => '外观良好', 'sale_price' => 10999, 'loan_amount' => 8800, 'periods' => 12, 'agent' => 'SALES-001', 'task_status' => 'SUBMITTED'],
-                ['no' => 'A20260530008', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::STORE->value, 'owner' => 'store001', 'status' => ApplicationStatus::PAID->value, 'customer' => '测试客户刘女士', 'phone' => '0900-000-008', 'id_no' => 'TEST-ID-008', 'address' => '测试地址 8 号', 'brand' => 'Apple', 'model' => 'iPhone 15 Pro Max', 'color' => '黑色', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-008', 'condition' => '外观良好', 'sale_price' => 8599, 'loan_amount' => 6800, 'periods' => 12, 'agent' => 'SALES-002', 'task_status' => 'SUBMITTED'],
+                ['no' => 'A20260530008', 'store' => 'STORE-001', 'creator' => 'store001', 'owner_role' => UserRole::CASHIER->value, 'owner' => 'cashier001', 'status' => ApplicationStatus::PAID->value, 'customer' => '测试客户刘女士', 'phone' => '0900-000-008', 'id_no' => 'TEST-ID-008', 'address' => '测试地址 8 号', 'brand' => 'Apple', 'model' => 'iPhone 15 Pro Max', 'color' => '黑色', 'capacity' => '256GB', 'imei' => 'TEST-IMEI-008', 'condition' => '外观良好', 'sale_price' => 8599, 'loan_amount' => 6800, 'periods' => 12, 'agent' => 'SALES-002', 'task_status' => 'SUBMITTED'],
             ];
 
             foreach ($applications as $index => $application) {
@@ -85,7 +170,7 @@ class DemoSeeder extends Seeder
                 DB::table('applications')->insert([
                     'id' => $applicationId,
                     'application_no' => $application['no'],
-                    'source_type' => 'STORE_SUBMIT',
+                    'source_type' => 'USER_SUBMIT',
                     'store_id' => $stores[$application['store']],
                     'created_by_user_id' => $users[$application['creator']],
                     'current_owner_role' => $application['owner_role'],
@@ -112,7 +197,7 @@ class DemoSeeder extends Seeder
 
                 $this->addAttachment($applicationId, $users[$application['creator']], 'APPLICATION', '客户证件照-测试.png', $createdAt);
                 $this->addAttachment($applicationId, $users[$application['creator']], 'APPLICATION', '设备照片-测试.png', $createdAt);
-                $this->addStatusLog($applicationId, $users[$application['creator']], UserRole::STORE->value, null, ApplicationStatus::PENDING_ASSIGNMENT->value, '店家提交到店客户申请', $createdAt);
+                $this->addStatusLog($applicationId, $users[$application['creator']], UserRole::STORE->value, null, ApplicationStatus::PENDING_ASSIGNMENT->value, '客户提交申请，商家线下协助。', $createdAt);
 
                 if ($application['agent'] !== null) {
                     DB::table('inspection_tasks')->insert([
@@ -161,8 +246,10 @@ class DemoSeeder extends Seeder
                         ? $this->addAttachment($applicationId, $users['cashier001'], 'PAYOUT', '打款凭证-'.$application['no'].'.png', $createdAt->copy()->addMinutes(65))
                         : null;
 
+                    $payoutId = (string) Str::uuid();
+
                     DB::table('payout_records')->insert([
-                        'id' => (string) Str::uuid(),
+                        'id' => $payoutId,
                         'application_id' => $applicationId,
                         'cashier_user_id' => $application['status'] === ApplicationStatus::PAID->value ? $users['cashier001'] : null,
                         'amount' => $application['loan_amount'],
@@ -173,13 +260,89 @@ class DemoSeeder extends Seeder
                         'created_at' => $createdAt->copy()->addMinutes(50),
                         'updated_at' => $createdAt->copy()->addMinutes(50),
                     ]);
+
+                    if ($application['status'] === ApplicationStatus::PAID->value) {
+                        DB::table('merchant_payment_vouchers')->insert([
+                            'id' => (string) Str::uuid(),
+                            'voucher_no' => 'PV'.$createdAt->format('YmdHis'),
+                            'store_id' => $stores[$application['store']],
+                            'payout_record_id' => $payoutId,
+                            'related_business_no' => $application['no'],
+                            'amount' => $application['loan_amount'],
+                            'status' => 'PAID',
+                            'paid_at' => $createdAt->copy()->addMinutes(70),
+                            'payee_name' => $application['store'] === 'STORE-001' ? '东区旗舰店' : '南区合作店',
+                            'payee_account_masked' => $application['store'] === 'STORE-001' ? '6222********8888' : '6222********2222',
+                            'payer_name' => '博远财务',
+                            'voucher_file' => json_encode($this->demoFile('merchant-vouchers/'.$application['no'].'.png')),
+                            'remark' => '公司已完成线下打款。',
+                            'void_reason' => null,
+                            'created_by_user_id' => $users['cashier001'],
+                            'created_at' => $createdAt->copy()->addMinutes(70),
+                            'updated_at' => $createdAt->copy()->addMinutes(70),
+                        ]);
+                    }
                 }
 
                 if ($application['status'] !== ApplicationStatus::PENDING_ASSIGNMENT->value) {
                     $this->addStatusLog($applicationId, $users[$application['owner']], $application['owner_role'], null, $application['status'], '测试数据当前状态：'.$application['status'], $createdAt->copy()->addMinutes(60));
                 }
             }
+
+            DB::table('merchant_payment_vouchers')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'voucher_no' => 'PV202606080001',
+                    'store_id' => $stores['STORE-001'],
+                    'payout_record_id' => null,
+                    'related_business_no' => 'A202606080001',
+                    'amount' => 3215,
+                    'status' => 'PENDING_CONFIRMATION',
+                    'paid_at' => $now->copy()->subHours(6),
+                    'payee_name' => '东区旗舰店',
+                    'payee_account_masked' => '6222********8888',
+                    'payer_name' => '博远财务',
+                    'voucher_file' => json_encode($this->demoFile('merchant-vouchers/PV202606080001.png')),
+                    'remark' => '待商家确认查看。',
+                    'void_reason' => null,
+                    'created_by_user_id' => $users['admin001'],
+                    'created_at' => $now->copy()->subHours(6),
+                    'updated_at' => $now->copy()->subHours(6),
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'voucher_no' => 'PV202606080002',
+                    'store_id' => $stores['STORE-002'],
+                    'payout_record_id' => null,
+                    'related_business_no' => 'A202606080002',
+                    'amount' => 4800,
+                    'status' => 'VOIDED',
+                    'paid_at' => $now->copy()->subHours(12),
+                    'payee_name' => '南区合作店',
+                    'payee_account_masked' => '6222********2222',
+                    'payer_name' => '博远财务',
+                    'voucher_file' => json_encode($this->demoFile('merchant-vouchers/PV202606080002.pdf', 'application/pdf')),
+                    'remark' => '测试作废凭证。',
+                    'void_reason' => '凭证关联业务编号填写错误。',
+                    'created_by_user_id' => $users['admin001'],
+                    'created_at' => $now->copy()->subHours(12),
+                    'updated_at' => $now->copy()->subHours(10),
+                ],
+            ]);
         });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function demoFile(string $filePath, string $mimeType = 'image/png'): array
+    {
+        return [
+            'fileName' => basename($filePath),
+            'filePath' => 'demo/'.$filePath,
+            'mimeType' => $mimeType,
+            'fileSize' => $mimeType === 'application/pdf' ? 240000 : 128000,
+        ];
     }
 
     private function addAttachment(string $applicationId, int $uploadedByUserId, string $module, string $fileName, mixed $createdAt): string

@@ -251,9 +251,9 @@ function attachmentHref(attachment: AttachmentInfo) {
         </details>
 
         <details class="detail-section">
-          <summary>门店与业务员</summary>
+          <summary>商家与业务员</summary>
           <dl>
-            <dt>门店</dt>
+            <dt>商家</dt>
             <dd>{{ text(application.storeName) }}</dd>
             <dt>当前负责人</dt>
             <dd>{{ text(application.currentOwnerRole, '暂无负责人') }}</dd>

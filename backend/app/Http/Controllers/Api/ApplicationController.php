@@ -36,6 +36,10 @@ class ApplicationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        if ($this->roleValue($request->user()) === UserRole::STORE->value) {
+            return $this->forbidden($request);
+        }
+
         $applications = $this->visibleApplications($request->user())
             ->with(['store', 'createdBy'])
             ->latest()
@@ -51,6 +55,10 @@ class ApplicationController extends Controller
 
     public function show(Request $request, string $applicationId): JsonResponse
     {
+        if ($this->roleValue($request->user()) === UserRole::STORE->value) {
+            return $this->forbidden($request);
+        }
+
         $application = $this->findVisibleApplication($request, $applicationId);
 
         if (! $application) {
@@ -70,11 +78,11 @@ class ApplicationController extends Controller
         $role = $this->roleValue($user);
         $validated = $request->validated();
 
-        if (! in_array($role, [UserRole::STORE->value, UserRole::SUPER_ADMIN->value], true)) {
+        if ($role !== UserRole::SUPER_ADMIN->value) {
             return $this->forbidden($request);
         }
 
-        $storeId = $role === UserRole::STORE->value ? $user->store_id : ($validated['storeId'] ?? null);
+        $storeId = $validated['storeId'] ?? null;
 
         if (! $storeId) {
             return $this->error($request, 'VALIDATION_ERROR', '请选择申请所属门店。', 422);
@@ -93,6 +101,10 @@ class ApplicationController extends Controller
 
     public function logs(Request $request, string $applicationId): JsonResponse
     {
+        if ($this->roleValue($request->user()) === UserRole::STORE->value) {
+            return $this->forbidden($request);
+        }
+
         $application = $this->findVisibleApplication($request, $applicationId);
 
         if (! $application) {
@@ -303,12 +315,6 @@ class ApplicationController extends Controller
             return true;
         }
 
-        if ($application->current_owner_role === UserRole::STORE->value) {
-            return $role === UserRole::STORE->value
-                && $user->store_id === $application->store_id
-                && $application->current_owner_user_id === $user->id;
-        }
-
         if ($application->current_owner_role === UserRole::SALES->value) {
             return $role === UserRole::SALES->value
                 && $application->current_owner_user_id === $user->id;
@@ -483,7 +489,7 @@ class ApplicationController extends Controller
                 return DB::transaction(function () use ($validated, $user, $storeId): Application {
                     $application = Application::query()->create([
                         'application_no' => $this->nextApplicationNo(),
-                        'source_type' => 'STORE_SUBMIT',
+                        'source_type' => 'ADMIN_CREATE',
                         'store_id' => $storeId,
                         'created_by_user_id' => $user->id,
                         'current_owner_role' => UserRole::AUDITOR->value,
@@ -512,7 +518,7 @@ class ApplicationController extends Controller
                         'actor_role' => $this->roleValue($user),
                         'from_status' => null,
                         'to_status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
-                        'message' => '店家提交验机申请。',
+                        'message' => '后台创建测试申请。',
                         'metadata' => [
                             'action' => 'SUBMIT_APPLICATION',
                             'source' => 'ApplicationController',

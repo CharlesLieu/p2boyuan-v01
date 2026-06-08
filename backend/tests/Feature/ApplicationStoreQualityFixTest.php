@@ -53,12 +53,13 @@ namespace Tests\Feature {
             Carbon::setTestNow(Carbon::parse('2026-05-30 21:30:00'));
             $GLOBALS['application_controller_random_int'] = [123, 124];
 
+            $admin = User::query()->where('username', 'admin001')->firstOrFail();
             $storeUser = User::query()->where('username', 'store001')->firstOrFail();
             $collisionNo = 'A20260530213000123';
 
             Application::query()->create([
                 'application_no' => $collisionNo,
-                'source_type' => 'STORE_SUBMIT',
+                'source_type' => 'USER_SUBMIT',
                 'store_id' => $storeUser->store_id,
                 'created_by_user_id' => $storeUser->id,
                 'current_owner_role' => UserRole::AUDITOR->value,
@@ -76,8 +77,11 @@ namespace Tests\Feature {
                 'periods' => 12,
             ]);
 
-            $response = $this->actingAs($storeUser, 'sanctum')
-                ->postJson('/api/v1/applications', $this->validPayload());
+            $response = $this->actingAs($admin, 'sanctum')
+                ->postJson('/api/v1/applications', [
+                    ...$this->validPayload(),
+                    'storeId' => $storeUser->store_id,
+                ]);
 
             $response
                 ->assertCreated()
@@ -110,7 +114,7 @@ namespace Tests\Feature {
                 'salePrice' => 8999,
                 'loanAmount' => 7200,
                 'periods' => 12,
-                'remark' => '门店现场彩排提交',
+                'remark' => '测试提交',
             ];
         }
     }

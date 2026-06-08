@@ -13,10 +13,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: '/store',
     component: StoreWorkspace,
     meta: {
-      title: '店家工作台',
+      title: '商家工作台',
       role: 'STORE',
-      badge: '提交验机申请',
-      primaryAction: '新建申请',
+      badge: '商家入驻与凭证',
+      primaryAction: '查看凭证',
     },
   },
   {
@@ -56,7 +56,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       title: '超级管理员',
       role: 'SUPER_ADMIN',
       badge: '管理控制台',
-      primaryAction: '重置测试数据',
+      primaryAction: '商家与凭证管理',
     },
   },
 ]

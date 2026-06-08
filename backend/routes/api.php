@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\InspectionTaskController;
+use App\Http\Controllers\Api\MerchantController;
 use App\Http\Controllers\Api\PayoutController;
 use App\Http\Controllers\Api\SalesAgentController;
 use Illuminate\Support\Facades\Route;
@@ -30,7 +31,7 @@ Route::middleware('auth:sanctum')
     ->group(function (): void {
         Route::get('/applications', [ApplicationController::class, 'index']);
         Route::post('/applications', [ApplicationController::class, 'store'])
-            ->middleware('role:STORE,SUPER_ADMIN');
+            ->middleware('role:SUPER_ADMIN');
         Route::get('/applications/{applicationId}', [ApplicationController::class, 'show']);
         Route::get('/applications/{applicationId}/logs', [ApplicationController::class, 'logs']);
         Route::get('/sales-agents', [SalesAgentController::class, 'index'])
@@ -44,7 +45,15 @@ Route::middleware('auth:sanctum')
         Route::post('/applications/{applicationId}/request-supplement', [ApplicationController::class, 'requestSupplement'])
             ->middleware('role:AUDITOR,SUPER_ADMIN');
         Route::post('/applications/{applicationId}/supplement', [ApplicationController::class, 'submitSupplement'])
-            ->middleware('role:STORE,SALES,SUPER_ADMIN');
+            ->middleware('role:SALES,SUPER_ADMIN');
+        Route::post('/merchant/onboarding', [MerchantController::class, 'submitOnboarding'])
+            ->middleware('role:STORE');
+        Route::get('/merchant/me', [MerchantController::class, 'me'])
+            ->middleware('role:STORE');
+        Route::get('/merchant/vouchers', [MerchantController::class, 'vouchers'])
+            ->middleware('role:STORE');
+        Route::get('/merchant/vouchers/{voucherId}', [MerchantController::class, 'voucher'])
+            ->middleware('role:STORE');
         Route::post('/attachments', [AttachmentController::class, 'store']);
         Route::post('/inspection-tasks/{inspectionTaskId}/start', [InspectionTaskController::class, 'start'])
             ->middleware('role:SALES,SUPER_ADMIN');
@@ -61,5 +70,19 @@ Route::middleware('auth:sanctum')
         Route::post('/admin/reset-demo-data', [AdminController::class, 'resetDemoData'])
             ->middleware('role:SUPER_ADMIN');
         Route::post('/admin/applications/{application}/status', [AdminController::class, 'updateApplicationStatus'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::get('/admin/merchants', [MerchantController::class, 'adminMerchants'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::get('/admin/merchants/{onboardingId}', [MerchantController::class, 'adminMerchant'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/merchants/{onboardingId}/approve', [MerchantController::class, 'approveMerchant'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/merchants/{onboardingId}/reject', [MerchantController::class, 'rejectMerchant'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::get('/admin/merchant-vouchers', [MerchantController::class, 'adminVouchers'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/merchant-vouchers', [MerchantController::class, 'createVoucher'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/merchant-vouchers/{voucherId}/void', [MerchantController::class, 'voidVoucher'])
             ->middleware('role:SUPER_ADMIN');
     });

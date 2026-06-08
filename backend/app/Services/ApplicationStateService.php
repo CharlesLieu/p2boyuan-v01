@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Application;
 use App\Models\Attachment;
 use App\Models\InspectionTask;
+use App\Models\MerchantPaymentVoucher;
 use App\Models\PayoutRecord;
 use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
@@ -158,8 +159,8 @@ class ApplicationStateService
             $this->transitionApplication(
                 $application,
                 ApplicationStatus::NEEDS_SUPPLEMENT,
-                UserRole::STORE,
-                $application->created_by_user_id,
+                UserRole::SALES,
+                $this->firstActiveUserIdForSalesAgent($task->salesAgent),
             );
 
             $this->log($application, $actor, ApplicationStatus::INSPECTION_IN_PROGRESS, ApplicationStatus::NEEDS_SUPPLEMENT, '业务员退回验机任务，要求补充资料。', [
@@ -261,9 +262,7 @@ class ApplicationStateService
                 ->findOrFail($application->id);
             $this->ensureApplicationStatus($application, ApplicationStatus::PENDING_REVIEW);
 
-            $ownerUserId = $ownerRole === UserRole::STORE
-                ? $application->created_by_user_id
-                : $this->firstActiveUserIdForSalesAgent($application->inspectionTasks->sortByDesc('created_at')->first()?->salesAgent);
+            $ownerUserId = $this->firstActiveUserIdForSalesAgent($application->inspectionTasks->sortByDesc('created_at')->first()?->salesAgent);
 
             $reviewRecord = $this->createReviewRecord(
                 $application,
@@ -336,6 +335,7 @@ class ApplicationStateService
         return DB::transaction(function () use ($payoutRecord, $actor, $amount, $voucher, $remark, $paidAt): array {
             $payoutRecord = PayoutRecord::query()->with('application')->lockForUpdate()->findOrFail($payoutRecord->id);
             $application = $payoutRecord->application;
+            $application->loadMissing('store');
 
             $this->ensureApplicationStatus($application, ApplicationStatus::PENDING_PAYOUT);
 
@@ -367,7 +367,28 @@ class ApplicationStateService
                 'remark' => $remark,
             ])->save();
 
-            $this->transitionApplication($application, ApplicationStatus::PAID, UserRole::STORE, $application->created_by_user_id);
+            MerchantPaymentVoucher::query()->create([
+                'voucher_no' => $this->nextVoucherNo(),
+                'store_id' => $application->store_id,
+                'payout_record_id' => $payoutRecord->id,
+                'related_business_no' => $application->application_no,
+                'amount' => $amount,
+                'status' => 'PAID',
+                'paid_at' => $payoutRecord->paid_at,
+                'payee_name' => $application->store?->name ?? '商家',
+                'payee_account_masked' => $this->maskAccount($application->store?->payment_account),
+                'payer_name' => '博远财务',
+                'voucher_file' => [
+                    'fileName' => $voucher['fileName'],
+                    'filePath' => $voucher['filePath'],
+                    'mimeType' => $voucher['mimeType'] ?? null,
+                    'fileSize' => $voucher['fileSize'] ?? 0,
+                ],
+                'remark' => $remark,
+                'created_by_user_id' => $actor->id,
+            ]);
+
+            $this->transitionApplication($application, ApplicationStatus::PAID, UserRole::CASHIER, $actor->id);
             $this->log($application, $actor, ApplicationStatus::PENDING_PAYOUT, ApplicationStatus::PAID, '出纳确认打款并上传凭证。', [
                 'action' => 'CONFIRM_PAYOUT',
                 'payoutRecordId' => $payoutRecord->id,
@@ -448,5 +469,23 @@ class ApplicationStateService
             ->where('role', UserRole::SALES->value)
             ->where('status', 'ACTIVE')
             ->value('id');
+    }
+
+    private function nextVoucherNo(): string
+    {
+        return 'PV'.now()->format('YmdHis').str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+    }
+
+    private function maskAccount(?string $account): string
+    {
+        if (! $account) {
+            return '****';
+        }
+
+        if (mb_strlen($account) <= 8) {
+            return str_repeat('*', mb_strlen($account));
+        }
+
+        return mb_substr($account, 0, 4).str_repeat('*', max(mb_strlen($account) - 8, 0)).mb_substr($account, -4);
     }
 }

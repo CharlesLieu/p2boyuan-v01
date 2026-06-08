@@ -109,10 +109,6 @@ class AttachmentController extends Controller
             return true;
         }
 
-        if ($role === UserRole::STORE->value) {
-            return $user->store_id !== null && $user->store_id === $application->store_id;
-        }
-
         if ($role === UserRole::SALES->value) {
             return $user->sales_agent_id !== null
                 && $application->inspectionTasks

@@ -18,7 +18,7 @@ function money(value: number | string | null | undefined) {
 
 function ownerLabel(application: ApplicationItem) {
   const roleMap: Record<string, string> = {
-    STORE: '店家',
+    STORE: '商家',
     SALES: '业务员',
     AUDITOR: '审核员',
     CASHIER: '出纳',
