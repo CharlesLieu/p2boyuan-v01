@@ -102,6 +102,9 @@ const onboardingStatus = computed(
   () => profile.value?.onboardingStatus ?? latestOnboarding.value?.status ?? 'DRAFT',
 )
 const isApproved = computed(() => onboardingStatus.value === 'APPROVED')
+const canSubmitOnboarding = computed(
+  () => onboardingStatus.value === 'DRAFT' || onboardingStatus.value === 'REJECTED',
+)
 const filteredVouchers = computed(() => {
   if (voucherFilter.value === 'ALL') {
     return vouchers.value
@@ -126,6 +129,11 @@ const mineStats = computed(() => [
   { label: '入驻状态', value: onboardingStatusLabel(onboardingStatus.value) },
   { label: '商家编号', value: profile.value?.storeCode ?? '-' },
 ])
+const onboardingSubmitText = computed(() => {
+  if (onboardingStatus.value === 'PENDING_REVIEW') return '已提交审核'
+  if (onboardingStatus.value === 'APPROVED') return '已通过审核'
+  return '提交入驻申请'
+})
 
 async function refresh() {
   loading.value = true
@@ -142,6 +150,8 @@ async function refresh() {
       activeTab.value = activeTab.value === 'onboarding' ? 'vouchers' : activeTab.value
     } else {
       vouchers.value = []
+      selectedVoucher.value = null
+      voucherDetailVisible.value = false
       activeTab.value = 'onboarding'
     }
   } catch (error) {
@@ -152,6 +162,16 @@ async function refresh() {
 }
 
 async function submitOnboarding() {
+  if (!canSubmitOnboarding.value) {
+    ElMessage.warning('当前入驻状态不允许重复提交。')
+    return
+  }
+
+  if (!validateOnboardingForm()) {
+    ElMessage.warning('请先补全商家入驻资料。')
+    return
+  }
+
   operating.value = true
 
   try {
@@ -189,6 +209,20 @@ function changeVoucherFilter(key: string) {
 function previewFile(filePath?: string | null) {
   const href = h5AttachmentHref(filePath)
   if (href) window.open(href, '_blank', 'noopener,noreferrer')
+}
+
+function validateOnboardingForm() {
+  return [
+    onboardingForm.applicantName,
+    onboardingForm.applicantPhone,
+    onboardingForm.applicantIdNumber,
+    onboardingForm.merchantName,
+    onboardingForm.merchantAddress,
+    onboardingForm.contactName,
+    onboardingForm.contactPhone,
+    onboardingForm.paymentAccount,
+    onboardingForm.paymentAccountName,
+  ].every((value) => String(value ?? '').trim().length > 0)
 }
 
 function onboardingStatusLabel(status: MerchantOnboardingStatus | string | null | undefined) {
@@ -335,15 +369,15 @@ onMounted(() => {
             <div class="file-grid">
               <article>
                 <span>身份证正面</span>
-                <strong>已选择身份证正面</strong>
+                <strong>资料文件将在正式上传接口接入后上传</strong>
               </article>
               <article>
                 <span>身份证反面</span>
-                <strong>已选择身份证反面</strong>
+                <strong>资料文件将在正式上传接口接入后上传</strong>
               </article>
               <article>
                 <span>商家资质</span>
-                <strong>已选择商家资质文件</strong>
+                <strong>资料文件将在正式上传接口接入后上传</strong>
               </article>
             </div>
 
@@ -352,9 +386,10 @@ onMounted(() => {
               type="primary"
               size="large"
               :loading="operating"
+              :disabled="!canSubmitOnboarding"
               @click="submitOnboarding"
             >
-              提交入驻申请
+              {{ onboardingSubmitText }}
             </el-button>
           </el-form>
         </section>
