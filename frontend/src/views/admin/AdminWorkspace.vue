@@ -70,8 +70,8 @@ const voucherForm = reactive<AdminMerchantVoucherPayload>({
   payeeAccountMasked: '6222********8888',
   payerName: '博远财务',
   voucherFile: {
-    fileName: 'merchant-voucher-demo.png',
-    filePath: 'demo/merchant-voucher-demo.png',
+    fileName: 'merchant-voucher.png',
+    filePath: 'merchant/merchant-voucher.png',
     mimeType: 'image/png',
     fileSize: 180000,
   },
