@@ -392,6 +392,12 @@ dt {
   }
 }
 
+@media (max-width: 1320px) {
+  .role-desktop .application-workbench {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1180px) {
   .role-mobile .application-workbench,
   .role-desktop .application-workbench {
