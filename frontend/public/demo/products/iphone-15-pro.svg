@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="iPhone 15 Pro mockup">
+  <rect width="320" height="320" rx="44" fill="#f1f6ff"/>
+  <g transform="translate(72 48) rotate(-6 60 118)">
+    <rect width="116" height="228" rx="24" fill="#87a6c5" stroke="#fff" stroke-width="8"/>
+    <rect x="18" y="21" width="56" height="56" rx="16" fill="#5e7fa1"/>
+    <circle cx="36" cy="40" r="13" fill="#090b11"/><circle cx="58" cy="58" r="13" fill="#090b11"/><circle cx="38" cy="62" r="8" fill="#27435f"/>
+  </g>
+  <g transform="translate(132 56) rotate(6 60 118)">
+    <rect width="116" height="228" rx="24" fill="#e8e9ec" stroke="#fff" stroke-width="8"/>
+    <rect x="18" y="21" width="56" height="56" rx="16" fill="#c6cad2"/>
+    <circle cx="36" cy="40" r="13" fill="#090b11"/><circle cx="58" cy="58" r="13" fill="#090b11"/><circle cx="38" cy="62" r="8" fill="#4d5562"/>
+  </g>
+</svg>

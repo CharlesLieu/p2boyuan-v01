@@ -79,6 +79,15 @@ const emit = defineEmits<{ tabChange: [key: string] }>()
   padding-top: 12px;
 }
 
+.h5-app-main :deep(.el-button--primary) {
+  --el-button-bg-color: var(--h5-blue);
+  --el-button-border-color: var(--h5-blue);
+  --el-button-hover-bg-color: #4865e8;
+  --el-button-hover-border-color: #4865e8;
+  --el-button-active-bg-color: #3651cb;
+  --el-button-active-border-color: #3651cb;
+}
+
 .h5-bottom-tabs {
   position: fixed;
   right: 0;

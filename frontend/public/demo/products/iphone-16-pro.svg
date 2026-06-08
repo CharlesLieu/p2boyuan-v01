@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="iPhone 16 Pro mockup">
+  <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#eef5ff"/><stop offset="1" stop-color="#dfe8ff"/></linearGradient></defs>
+  <rect width="320" height="320" rx="44" fill="url(#bg)"/>
+  <g transform="translate(74 48) rotate(-5 60 120)">
+    <rect width="116" height="228" rx="24" fill="#e8e3d8" stroke="#fff" stroke-width="8"/>
+    <rect x="18" y="21" width="56" height="56" rx="16" fill="#c8c0b1"/>
+    <circle cx="36" cy="40" r="13" fill="#0c0e16"/><circle cx="58" cy="58" r="13" fill="#0c0e16"/><circle cx="37" cy="62" r="8" fill="#343943"/>
+  </g>
+  <g transform="translate(130 56) rotate(5 60 120)">
+    <rect width="116" height="228" rx="24" fill="#a2acbd" stroke="#fff" stroke-width="8"/>
+    <rect x="18" y="21" width="56" height="56" rx="16" fill="#6f798d"/>
+    <circle cx="36" cy="40" r="13" fill="#0c0e16"/><circle cx="58" cy="58" r="13" fill="#0c0e16"/><circle cx="37" cy="62" r="8" fill="#2e3444"/>
+  </g>
+</svg>

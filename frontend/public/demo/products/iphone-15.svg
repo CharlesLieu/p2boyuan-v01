@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="iPhone 15 mockup">
+  <rect width="320" height="320" rx="44" fill="#edf4ff"/>
+  <g transform="translate(84 48)">
+    <rect width="132" height="236" rx="28" fill="#1d2742" stroke="#fff" stroke-width="8"/>
+    <rect x="41" y="18" width="50" height="16" rx="8" fill="#0d1324"/>
+    <rect x="14" y="48" width="104" height="170" rx="18" fill="#c4dcff" opacity=".3"/>
+  </g>
+</svg>

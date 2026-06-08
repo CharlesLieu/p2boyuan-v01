@@ -547,6 +547,22 @@ dt {
 }
 
 @media (max-width: 720px) {
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+    background: var(--h5-bg);
+  }
+
+  .shell-sidebar,
+  .shell-header {
+    display: none;
+  }
+
+  .shell-main {
+    min-height: 100vh;
+    padding: 0;
+  }
+
   .login-page {
     padding: 12px;
     background:

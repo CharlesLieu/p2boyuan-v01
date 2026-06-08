@@ -182,6 +182,32 @@ function attachmentHref(attachment: AttachmentInfo) {
 
   return `/storage/${path}`
 }
+
+function stepClass(step: 'submitted' | 'inspection' | 'review' | 'payout') {
+  const status = props.application?.status
+  const inspectionActive = ['ASSIGNED', 'INSPECTION_IN_PROGRESS'].includes(String(status))
+  const reviewActive = ['PENDING_REVIEW', 'NEEDS_SUPPLEMENT', 'REJECTED'].includes(String(status))
+  const payoutActive = String(status) === 'PENDING_PAYOUT'
+
+  const doneMap: Record<typeof step, boolean> = {
+    submitted: true,
+    inspection: ['PENDING_REVIEW', 'NEEDS_SUPPLEMENT', 'REJECTED', 'PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(String(status)),
+    review: ['PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(String(status)),
+    payout: ['PAID', 'COMPLETED'].includes(String(status)),
+  }
+  const currentMap: Record<typeof step, boolean> = {
+    submitted: ['DRAFT', 'PENDING_ASSIGNMENT'].includes(String(status)),
+    inspection: inspectionActive,
+    review: reviewActive,
+    payout: payoutActive,
+  }
+
+  return {
+    done: doneMap[step],
+    current: currentMap[step],
+    pending: !doneMap[step] && !currentMap[step],
+  }
+}
 </script>
 
 <template>
@@ -200,10 +226,10 @@ function attachmentHref(attachment: AttachmentInfo) {
       </div>
 
       <div class="status-steps">
-        <span :class="{ done: true }">已提交</span>
-        <span :class="{ done: ['ASSIGNED', 'INSPECTION_IN_PROGRESS', 'PENDING_REVIEW', 'NEEDS_SUPPLEMENT', 'PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(application.status) }">验机</span>
-        <span :class="{ done: ['PENDING_REVIEW', 'NEEDS_SUPPLEMENT', 'PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(application.status) }">审核</span>
-        <span :class="{ done: ['PENDING_PAYOUT', 'PAID', 'COMPLETED'].includes(application.status) }">放款</span>
+        <span :class="stepClass('submitted')">已提交</span>
+        <span :class="stepClass('inspection')">验机</span>
+        <span :class="stepClass('review')">审核</span>
+        <span :class="stepClass('payout')">放款</span>
       </div>
 
       <div class="detail-metrics">
@@ -395,9 +421,21 @@ function attachmentHref(attachment: AttachmentInfo) {
 }
 
 .status-steps span.done {
-  border-color: #f4b1b4;
-  background: #fff4f4;
-  color: #b91720;
+  border-color: rgba(93, 120, 255, 0.22);
+  background: #f3f6ff;
+  color: #5d78ff;
+}
+
+.status-steps span.current {
+  border-color: rgba(240, 122, 74, 0.34);
+  background: #fff5ef;
+  color: #d85f2d;
+}
+
+.status-steps span.pending {
+  border-color: #e5eaf4;
+  background: #fafcff;
+  color: #9aa6bc;
 }
 
 .detail-metrics div {
@@ -564,11 +602,35 @@ dd {
   .status-steps span.done {
     border-color: transparent;
     background: transparent;
+    color: #5d78ff;
   }
 
   .status-steps span.done::before {
-    border-color: #d7232a;
-    background: #d7232a;
+    border-color: #5d78ff;
+    background: #5d78ff;
+  }
+
+  .status-steps span.current {
+    border-color: transparent;
+    background: transparent;
+    color: #d85f2d;
+  }
+
+  .status-steps span.current::before {
+    border-color: #f07a4a;
+    background: #f07a4a;
+    box-shadow: 0 0 0 5px rgba(240, 122, 74, 0.15);
+  }
+
+  .status-steps span.pending {
+    border-color: transparent;
+    background: transparent;
+    color: #9aa6bc;
+  }
+
+  .status-steps span.pending::before {
+    border-color: #dfe5ee;
+    background: #fff;
   }
 
   .detail-metrics {

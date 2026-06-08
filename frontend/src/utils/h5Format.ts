@@ -43,9 +43,20 @@ export function h5AttachmentHref(path?: string | null) {
 
 export function h5ProductImage(model?: string | null) {
   const normalized = String(model ?? '').toLowerCase()
-  if (normalized.includes('17')) return '/demo/products/iphone-17-pro-max.png'
-  if (normalized.includes('16')) return '/demo/products/iphone-16-pro-max.png'
-  if (normalized.includes('15')) return '/demo/products/iphone-15-pro.png'
-  if (normalized.includes('14')) return '/demo/products/iphone-14-pro.png'
-  return '/demo/products/iphone-default.png'
+  if (normalized.includes('17')) return '/demo/products/iphone-17-pro-max.svg'
+  if (normalized.includes('16') && normalized.includes('pro max')) {
+    return '/demo/products/iphone-16-pro-max.svg'
+  }
+  if (normalized.includes('16') && normalized.includes('pro')) return '/demo/products/iphone-16-pro.svg'
+  if (normalized.includes('16')) return '/demo/products/iphone-16-pro.svg'
+  if (normalized.includes('15') && normalized.includes('pro max')) {
+    return '/demo/products/iphone-15-pro-max.svg'
+  }
+  if (normalized.includes('15') && normalized.includes('pro')) return '/demo/products/iphone-15-pro.svg'
+  if (normalized.includes('15')) return '/demo/products/iphone-15.svg'
+  if (normalized.includes('14') && normalized.includes('pro')) return '/demo/products/iphone-14-pro.svg'
+  if (normalized.includes('14')) return '/demo/products/iphone-14.svg'
+  if (normalized.includes('13')) return '/demo/products/iphone-13.svg'
+  if (normalized.includes('12')) return '/demo/products/iphone-12.svg'
+  return '/demo/products/iphone-default.svg'
 }

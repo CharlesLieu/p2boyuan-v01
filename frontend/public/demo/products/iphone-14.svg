@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="iPhone 14 mockup">
+  <rect width="320" height="320" rx="44" fill="#eef5ff"/>
+  <g transform="translate(82 48)">
+    <rect width="128" height="236" rx="28" fill="#f5f5f7" stroke="#fff" stroke-width="8"/>
+    <rect x="16" y="22" width="50" height="50" rx="15" fill="#e1e4ec"/>
+    <circle cx="34" cy="40" r="12" fill="#0d1324"/><circle cx="50" cy="58" r="12" fill="#0d1324"/>
+  </g>
+</svg>
