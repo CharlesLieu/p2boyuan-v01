@@ -118,12 +118,19 @@ async function confirmSelectedPayout() {
     return
   }
 
+  const amount = Number(form.amount)
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    ElMessage.warning('请输入有效打款金额。')
+    return
+  }
+
   if (!voucherAttachment.value) {
     ElMessage.warning('请先上传打款凭证。')
     return
   }
 
-  if (Number(form.amount) > selectedPayoutAmount.value) {
+  if (amount > selectedPayoutAmount.value) {
     ElMessage.warning(`打款金额不能超过申请贷款金额 ${h5Money(selectedPayoutAmount.value)}。`)
     form.amount = selectedPayoutAmount.value
     return
@@ -133,7 +140,7 @@ async function confirmSelectedPayout() {
 
   try {
     await confirmPayout(selectedPayout.value.id, {
-      amount: form.amount || Number(selectedPayout.value.amount),
+      amount,
       paidAt: form.paidAt,
       remark: form.remark,
       voucher: {
@@ -196,16 +203,28 @@ async function handleVoucherChange(event: Event) {
     return
   }
 
+  const uploadPayoutId = selectedPayout.value.id
+  const uploadApplicationId = selectedPayout.value.applicationId
+
   uploading.value = true
 
   try {
-    voucherAttachment.value = await uploadAttachment({
-      applicationId: selectedPayout.value.applicationId,
+    const uploadedAttachment = await uploadAttachment({
+      applicationId: uploadApplicationId,
       module: 'PAYOUT',
       file,
       remark: '出纳上传的打款凭证。',
     })
-    ElMessage.success('凭证已上传。')
+
+    if (
+      selectedPayoutId.value === uploadPayoutId &&
+      selectedPayout.value?.applicationId === uploadApplicationId
+    ) {
+      voucherAttachment.value = uploadedAttachment
+      ElMessage.success('凭证已上传。')
+    } else {
+      ElMessage.info('当前订单已切换，请重新上传凭证。')
+    }
   } catch (error) {
     ElMessage.error(errorMessage(error))
   } finally {
