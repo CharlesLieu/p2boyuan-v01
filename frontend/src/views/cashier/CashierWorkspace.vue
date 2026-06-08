@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Money, Refresh, Upload } from '@element-plus/icons-vue'
-import ApplicationDetail from '../../components/application/ApplicationDetail.vue'
+import { Money, Refresh } from '@element-plus/icons-vue'
+import H5AppFrame from '../../components/h5/H5AppFrame.vue'
+import H5DetailSheet from '../../components/h5/H5DetailSheet.vue'
+import H5FileUploadBox from '../../components/h5/H5FileUploadBox.vue'
+import H5OrderCard from '../../components/h5/H5OrderCard.vue'
+import H5OverviewCard from '../../components/h5/H5OverviewCard.vue'
+import H5StatusTabs from '../../components/h5/H5StatusTabs.vue'
 import {
   confirmPayout,
   listPayouts,
@@ -10,25 +15,34 @@ import {
   type AttachmentInfo,
   type PayoutRecord,
 } from '../../api/modules/applications'
-import { useApplicationsStore } from '../../stores/applications'
+import { h5Money, h5ProductImage } from '../../utils/h5Format'
 
-const applications = useApplicationsStore()
+type CashierTab = 'payouts' | 'vouchers' | 'mine'
+type PayoutStatusFilter = 'ALL' | 'PENDING' | 'PAID' | 'VOUCHER_ISSUE'
+
 const payouts = ref<PayoutRecord[]>([])
 const selectedPayoutId = ref<string | null>(null)
 const loading = ref(false)
 const operating = ref(false)
 const uploading = ref(false)
+const detailVisible = ref(false)
 const voucherInput = ref<HTMLInputElement | null>(null)
 const voucherAttachment = ref<AttachmentInfo | null>(null)
-const voucherPreviewUrl = computed(() =>
-  voucherAttachment.value ? attachmentHref(voucherAttachment.value) : null,
-)
-const voucherIsImage = computed(() => {
-  const mimeType = voucherAttachment.value?.mimeType ?? ''
-  const fileName = voucherAttachment.value?.fileName ?? ''
+const activeTab = ref<CashierTab>('payouts')
+const payoutFilter = ref<PayoutStatusFilter>('ALL')
 
-  return mimeType.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(fileName)
-})
+const cashierTabs = [
+  { key: 'payouts', label: '打款' },
+  { key: 'vouchers', label: '凭证' },
+  { key: 'mine', label: '我的' },
+]
+const payoutStatusTabs: Array<{ key: PayoutStatusFilter; label: string }> = [
+  { key: 'ALL', label: '全部' },
+  { key: 'PENDING', label: '待打款' },
+  { key: 'PAID', label: '已打款' },
+  { key: 'VOUCHER_ISSUE', label: '凭证异常' },
+]
+
 const form = reactive({
   amount: 0,
   paidAt: dateTimeValue(),
@@ -39,11 +53,48 @@ const selectedPayout = computed(
   () => payouts.value.find((payout) => payout.id === selectedPayoutId.value) ?? null,
 )
 const selectedPayoutAmount = computed(() => Number(selectedPayout.value?.amount ?? 0))
+const selectedVoucher = computed(
+  () => voucherAttachment.value ?? selectedPayout.value?.voucherAttachment ?? selectedPayout.value?.voucher ?? null,
+)
+const voucherPreviewUrl = computed(() =>
+  selectedVoucher.value ? attachmentHref(selectedVoucher.value) : null,
+)
 const pendingPayouts = computed(() => payouts.value.filter((payout) => payout.status === 'PENDING'))
+const paidPayouts = computed(() => payouts.value.filter((payout) => payout.status === 'PAID'))
+const voucherPayouts = computed(() =>
+  payouts.value.filter(
+    (payout) => payout.status === 'PAID' || Boolean(payout.voucherAttachment ?? payout.voucher),
+  ),
+)
 const paidAmount = computed(() =>
-  payouts.value
-    .filter((payout) => payout.status === 'PAID')
-    .reduce((total, payout) => total + Number(payout.amount ?? 0), 0),
+  paidPayouts.value.reduce((total, payout) => total + Number(payout.amount ?? 0), 0),
+)
+const overviewStats = computed(() => [
+  { label: '待打款', value: pendingPayouts.value.length },
+  { label: '已打款', value: h5Money(paidAmount.value) },
+])
+const mineStats = computed(() => [
+  { label: '待打款', value: pendingPayouts.value.length },
+  { label: '已打款金额', value: h5Money(paidAmount.value) },
+])
+const filteredPayouts = computed(() => {
+  if (payoutFilter.value === 'ALL') {
+    return payouts.value
+  }
+
+  if (payoutFilter.value === 'VOUCHER_ISSUE') {
+    return []
+  }
+
+  return payouts.value.filter((payout) => payout.status === payoutFilter.value)
+})
+const selectedVoucherFileName = computed(() => selectedVoucher.value?.fileName ?? null)
+const canPreviewVoucher = computed(() => Boolean(voucherPreviewUrl.value))
+const canConfirmSelected = computed(
+  () =>
+    Boolean(selectedPayout.value) &&
+    selectedPayout.value?.status === 'PENDING' &&
+    Boolean(voucherAttachment.value),
 )
 
 async function fetchPayouts() {
@@ -54,22 +105,11 @@ async function fetchPayouts() {
     if (!selectedPayoutId.value || !payouts.value.some((item) => item.id === selectedPayoutId.value)) {
       selectedPayoutId.value = payouts.value[0]?.id ?? null
     }
-    if (selectedPayout.value) {
-      form.amount = Number(selectedPayout.value.amount ?? 0)
-    }
-    await loadSelectedApplication()
+    syncFormFromSelected()
   } catch (error) {
     ElMessage.error(errorMessage(error))
   } finally {
     loading.value = false
-  }
-}
-
-async function loadSelectedApplication() {
-  const applicationId = selectedPayout.value?.applicationId
-
-  if (applicationId) {
-    await applications.select(applicationId)
   }
 }
 
@@ -84,7 +124,7 @@ async function confirmSelectedPayout() {
   }
 
   if (Number(form.amount) > selectedPayoutAmount.value) {
-    ElMessage.warning(`打款金额不能超过申请贷款金额 ${money(selectedPayoutAmount.value)}。`)
+    ElMessage.warning(`打款金额不能超过申请贷款金额 ${h5Money(selectedPayoutAmount.value)}。`)
     form.amount = selectedPayoutAmount.value
     return
   }
@@ -105,6 +145,7 @@ async function confirmSelectedPayout() {
       },
     })
     ElMessage.success('打款已确认。')
+    voucherAttachment.value = null
     await fetchPayouts()
   } catch (error) {
     ElMessage.error(errorMessage(error))
@@ -115,9 +156,25 @@ async function confirmSelectedPayout() {
 
 function selectPayout(payout: PayoutRecord) {
   selectedPayoutId.value = payout.id
-  form.amount = Number(payout.amount ?? 0)
   voucherAttachment.value = null
-  loadSelectedApplication()
+  syncFormFromSelected()
+}
+
+function openPayoutDetail(payout: PayoutRecord) {
+  selectPayout(payout)
+  detailVisible.value = true
+}
+
+function changeCashierTab(key: string) {
+  if (key === 'payouts' || key === 'vouchers' || key === 'mine') {
+    activeTab.value = key
+  }
+}
+
+function changePayoutFilter(key: string) {
+  if (payoutStatusTabs.some((tab) => tab.key === key)) {
+    payoutFilter.value = key as PayoutStatusFilter
+  }
 }
 
 function triggerVoucherUpload() {
@@ -156,22 +213,44 @@ async function handleVoucherChange(event: Event) {
   }
 }
 
-function money(value: number | string | null | undefined) {
-  return `￥${Number(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`
+function guardAmount() {
+  if (Number(form.amount) > selectedPayoutAmount.value) {
+    ElMessage.warning(`打款金额不能超过申请贷款金额 ${h5Money(selectedPayoutAmount.value)}。`)
+    form.amount = selectedPayoutAmount.value
+  }
 }
 
-function formatFileSize(value: number | null | undefined) {
-  const size = Number(value ?? 0)
-
-  if (size <= 0) {
-    return '大小待确认'
+function syncFormFromSelected() {
+  if (!selectedPayout.value) {
+    form.amount = 0
+    form.paidAt = dateTimeValue()
+    return
   }
 
-  if (size < 1024 * 1024) {
-    return `${Math.ceil(size / 1024)} KB`
-  }
+  form.amount = Number(selectedPayout.value.amount ?? 0)
+  form.paidAt = selectedPayout.value.paidAt ?? dateTimeValue()
+  form.remark = selectedPayout.value.remark ?? '线下打款已完成，凭证已上传。'
+}
 
-  return `${(size / 1024 / 1024).toFixed(1)} MB`
+function payoutCode(payout: PayoutRecord) {
+  return payout.application?.applicationNo ?? payout.id
+}
+
+function payoutTitle(payout: PayoutRecord) {
+  return payout.application?.model ?? '待打款订单'
+}
+
+function payoutSubtitle(payout: PayoutRecord) {
+  const storeName = payout.application?.storeName ?? '未记录'
+  const voucherText = payout.voucherAttachment || payout.voucher ? '已上传' : '待上传'
+
+  return `商家：${storeName} / 凭证：${voucherText}`
+}
+
+function payoutStatusLabel(status: string | null | undefined) {
+  if (status === 'PENDING') return '待打款'
+  if (status === 'PAID') return '已打款'
+  return '凭证异常'
 }
 
 function attachmentHref(attachment: AttachmentInfo) {
@@ -212,111 +291,466 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="workspace-page role-desktop">
-    <div class="workspace-hero">
-      <div>
-        <el-tag type="danger" effect="plain">打款确认</el-tag>
-        <h2>出纳工作台</h2>
-        <p>出纳查看待放款记录，确认打款金额和时间，并登记打款凭证供商家查看。</p>
+  <H5AppFrame
+    title="我的打款"
+    :tabs="cashierTabs"
+    :active-tab="activeTab"
+    @tab-change="changeCashierTab"
+  >
+    <template v-if="activeTab === 'payouts'">
+      <H5OverviewCard eyebrow="PAYOUT CENTER" title="打款中心" :stats="overviewStats">
+        <template #action>
+          <el-button class="refresh-button" :icon="Refresh" circle plain @click="fetchPayouts" />
+        </template>
+      </H5OverviewCard>
+
+      <H5StatusTabs :tabs="payoutStatusTabs" :active="payoutFilter" @change="changePayoutFilter" />
+
+      <div class="payout-list" :class="{ loading }">
+        <el-skeleton v-if="loading" :rows="8" animated />
+        <el-empty v-else-if="filteredPayouts.length === 0" description="暂无匹配打款" />
+        <H5OrderCard
+          v-for="payout in filteredPayouts"
+          v-else
+          :key="payout.id"
+          class="clickable-card"
+          :code="payoutCode(payout)"
+          :title="payoutTitle(payout)"
+          :subtitle="payoutSubtitle(payout)"
+          :amount="`最高打款 ${h5Money(payout.amount)}`"
+          :status="payoutStatusLabel(payout.status)"
+          :image="h5ProductImage(payout.application?.model)"
+          role="button"
+          tabindex="0"
+          @click="openPayoutDetail(payout)"
+          @keydown.enter.prevent="openPayoutDetail(payout)"
+        />
       </div>
-      <el-button :icon="Refresh" plain @click="fetchPayouts">刷新</el-button>
-    </div>
+    </template>
 
-    <div class="summary-grid">
-      <article><strong>打款记录</strong><span>{{ payouts.length }} 笔</span></article>
-      <article><strong>待打款</strong><span>{{ pendingPayouts.length }} 笔</span></article>
-      <article><strong>已打款金额</strong><span>{{ money(paidAmount) }}</span></article>
-      <article><strong>当前记录</strong><span>{{ selectedPayout?.status ?? '未选择' }}</span></article>
-    </div>
+    <template v-else-if="activeTab === 'vouchers'">
+      <H5OverviewCard
+        eyebrow="VOUCHER LIST"
+        title="凭证列表"
+        :stats="[
+          { label: '已上传', value: voucherPayouts.length },
+          { label: '已打款', value: paidPayouts.length },
+        ]"
+      />
 
-    <section class="cashier-grid">
-      <div class="table-panel">
-        <div class="panel-heading">
-          <h3>打款列表</h3>
-          <el-tag type="danger" effect="plain">{{ payouts.length }} 笔</el-tag>
-        </div>
-        <el-table
-          v-loading="loading"
-          :data="payouts"
-          row-key="id"
-          highlight-current-row
-          @row-click="selectPayout"
+      <div class="payout-list">
+        <el-empty v-if="voucherPayouts.length === 0" description="暂无打款凭证" />
+        <H5OrderCard
+          v-for="payout in voucherPayouts"
+          v-else
+          :key="payout.id"
+          class="clickable-card"
+          :code="payoutCode(payout)"
+          :title="payoutTitle(payout)"
+          :subtitle="payoutSubtitle(payout)"
+          :amount="`打款 ${h5Money(payout.amount)}`"
+          :status="payoutStatusLabel(payout.status)"
+          :image="h5ProductImage(payout.application?.model)"
+          role="button"
+          tabindex="0"
+          @click="openPayoutDetail(payout)"
+          @keydown.enter.prevent="openPayoutDetail(payout)"
         >
-          <el-table-column label="申请编号" min-width="150">
-            <template #default="{ row }">{{ row.application?.applicationNo ?? row.applicationId }}</template>
-          </el-table-column>
-          <el-table-column label="客户" min-width="100">
-            <template #default="{ row }">{{ row.application?.customerName ?? '-' }}</template>
-          </el-table-column>
-          <el-table-column label="金额" width="110">
-            <template #default="{ row }">{{ money(row.amount) }}</template>
-          </el-table-column>
-          <el-table-column prop="status" label="状态" width="100" />
-        </el-table>
-      </div>
-
-      <div class="operator-column">
-        <h3>确认打款</h3>
-        <el-input-number v-model="form.amount" :min="0" :max="selectedPayoutAmount" />
-        <p class="amount-limit">最高可打款：{{ money(selectedPayoutAmount) }}</p>
-        <el-date-picker v-model="form.paidAt" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
-        <div class="voucher-uploader">
-          <input
-            ref="voucherInput"
-            type="file"
-            accept=".png,.jpg,.jpeg,.webp,.pdf"
-            @change="handleVoucherChange"
-          />
           <el-button
-            :icon="Upload"
-            :loading="uploading"
-            :disabled="!selectedPayout || selectedPayout.status !== 'PENDING'"
+            size="small"
             plain
-            @click="triggerVoucherUpload"
+            :disabled="!((payout.voucherAttachment ?? payout.voucher)?.filePath)"
+            @click.stop="openPayoutDetail(payout)"
           >
-            上传打款凭证
+            查看
           </el-button>
-          <div v-if="voucherAttachment" class="voucher-preview">
-            <img
-              v-if="voucherIsImage && voucherPreviewUrl"
-              :src="voucherPreviewUrl"
-              alt="打款凭证预览"
-            />
-            <div v-else class="voucher-file-card">
-              <strong>{{ voucherAttachment.mimeType === 'application/pdf' ? 'PDF' : '文件' }}</strong>
-            </div>
-            <div>
-              <strong>{{ voucherAttachment.fileName }}</strong>
-              <span>{{ formatFileSize(voucherAttachment.fileSize) }}</span>
-            </div>
-            <div class="voucher-preview-actions">
-              <el-button size="small" plain :disabled="!voucherPreviewUrl" @click="previewVoucher">
-                预览凭证
-              </el-button>
-              <el-button size="small" @click="triggerVoucherUpload">重新上传</el-button>
-            </div>
-          </div>
-          <p v-else>支持 PNG、JPG、WEBP、PDF，最大 10MB。</p>
-        </div>
-        <el-input v-model="form.remark" type="textarea" :rows="3" />
-        <el-button
-          type="danger"
-          :icon="Money"
-          :disabled="!selectedPayout || selectedPayout.status !== 'PENDING' || !voucherAttachment"
-          :loading="operating"
-          @click="confirmSelectedPayout"
-        >
-          确认打款
-        </el-button>
+        </H5OrderCard>
       </div>
-    </section>
+    </template>
 
-    <ApplicationDetail
-      :application="applications.selected"
-      :loading="applications.detailLoading"
-      :logs="applications.logs"
-      :logs-loading="applications.logsLoading"
-      @load-logs="applications.loadLogs()"
+    <template v-else>
+      <section class="mine-stack">
+        <H5OverviewCard eyebrow="CASHIER ACCOUNT" title="cashier001" :stats="mineStats" />
+
+        <article class="profile-card">
+          <div>
+            <span>当前账号</span>
+            <strong>cashier001</strong>
+          </div>
+          <div>
+            <span>岗位角色</span>
+            <strong>出纳</strong>
+          </div>
+          <p>处理待打款订单，上传并确认打款凭证。</p>
+        </article>
+      </section>
+    </template>
+
+    <input
+      ref="voucherInput"
+      class="hidden-file-input"
+      type="file"
+      accept=".png,.jpg,.jpeg,.webp,.pdf"
+      @change="handleVoucherChange"
     />
-  </section>
+
+    <H5DetailSheet :visible="detailVisible" title="确认打款" @close="detailVisible = false">
+      <section v-if="selectedPayout" class="payout-detail">
+        <div class="detail-hero">
+          <img :src="h5ProductImage(selectedPayout.application?.model)" :alt="payoutTitle(selectedPayout)" />
+          <div>
+            <span>{{ payoutCode(selectedPayout) }}</span>
+            <h2>{{ payoutTitle(selectedPayout) }}</h2>
+            <strong>{{ payoutStatusLabel(selectedPayout.status) }}</strong>
+          </div>
+        </div>
+
+        <dl class="detail-list">
+          <div>
+            <dt>申请编号</dt>
+            <dd>{{ selectedPayout.application?.applicationNo ?? selectedPayout.applicationId ?? '-' }}</dd>
+          </div>
+          <div>
+            <dt>客户</dt>
+            <dd>{{ selectedPayout.application?.customerName ?? '-' }}</dd>
+          </div>
+          <div>
+            <dt>商家</dt>
+            <dd>{{ selectedPayout.application?.storeName ?? '未记录' }}</dd>
+          </div>
+          <div>
+            <dt>最高打款金额</dt>
+            <dd>{{ h5Money(selectedPayoutAmount) }}</dd>
+          </div>
+        </dl>
+
+        <section class="form-card">
+          <h3>打款信息</h3>
+          <label>
+            <span>确认金额</span>
+            <el-input-number
+              v-model="form.amount"
+              :min="0"
+              :max="selectedPayoutAmount"
+              controls-position="right"
+              @change="guardAmount"
+            />
+          </label>
+          <p class="amount-limit">最高可打款：{{ h5Money(selectedPayoutAmount) }}</p>
+          <label>
+            <span>打款时间</span>
+            <el-date-picker
+              v-model="form.paidAt"
+              type="datetime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              placeholder="选择打款时间"
+            />
+          </label>
+          <label>
+            <span>备注</span>
+            <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+          </label>
+        </section>
+
+        <H5FileUploadBox
+          label="打款凭证"
+          description="支持 PNG、JPG、WEBP、PDF。上传后可立即预览。"
+          :file-name="selectedVoucherFileName"
+          :previewable="canPreviewVoucher"
+          @upload="triggerVoucherUpload"
+          @preview="previewVoucher"
+        />
+
+        <button
+          v-if="selectedVoucherFileName && canPreviewVoucher"
+          class="preview-link"
+          type="button"
+          @click="previewVoucher"
+        >
+          预览凭证
+        </button>
+      </section>
+
+      <template #footer>
+        <div class="sheet-actions">
+          <el-button plain @click="detailVisible = false">关闭</el-button>
+          <el-button
+            type="primary"
+            :icon="Money"
+            :disabled="!canConfirmSelected || uploading"
+            :loading="operating"
+            @click="confirmSelectedPayout"
+          >
+            确认打款
+          </el-button>
+        </div>
+      </template>
+    </H5DetailSheet>
+  </H5AppFrame>
 </template>
+
+<style scoped>
+.refresh-button {
+  --el-button-bg-color: var(--h5-soft);
+  --el-button-border-color: var(--h5-border);
+  --el-button-hover-bg-color: #fff;
+  --el-button-hover-border-color: var(--h5-blue);
+  --el-button-hover-text-color: var(--h5-blue);
+}
+
+.payout-list,
+.mine-stack {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.payout-list.loading {
+  padding: 4px 0;
+}
+
+.clickable-card {
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.clickable-card:focus-visible,
+.clickable-card:hover {
+  transform: translateY(-1px);
+  outline: 2px solid rgba(93, 120, 255, 0.34);
+  outline-offset: 2px;
+  box-shadow: 0 18px 36px rgba(61, 86, 150, 0.16);
+}
+
+.hidden-file-input {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.profile-card,
+.payout-detail,
+.form-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.profile-card,
+.form-card,
+.detail-list {
+  padding: 18px;
+  border: 1px solid var(--h5-border);
+  border-radius: var(--h5-radius);
+  background: var(--h5-card);
+  box-shadow: var(--h5-shadow);
+}
+
+.profile-card div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--h5-border);
+}
+
+.profile-card div:last-of-type {
+  border-bottom: 0;
+}
+
+.profile-card span,
+.profile-card p {
+  color: var(--h5-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.profile-card strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--h5-ink);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.profile-card p {
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--h5-border);
+}
+
+.detail-hero {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--h5-border);
+  border-radius: var(--h5-radius);
+  background: linear-gradient(135deg, #fff, var(--h5-soft));
+}
+
+.detail-hero img {
+  width: 86px;
+  height: 104px;
+  border-radius: 18px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.detail-hero div {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.detail-hero span {
+  overflow: hidden;
+  color: var(--h5-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-hero h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--h5-ink);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.detail-hero strong {
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(93, 120, 255, 0.12);
+  color: var(--h5-blue);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--h5-border);
+}
+
+.detail-list div:last-child {
+  border-bottom: 0;
+}
+
+.detail-list dt,
+.detail-list dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.detail-list dt {
+  color: var(--h5-muted);
+  font-weight: 800;
+}
+
+.detail-list dd {
+  overflow-wrap: anywhere;
+  color: var(--h5-ink);
+  font-weight: 900;
+}
+
+.form-card {
+  box-shadow: none;
+}
+
+.form-card h3 {
+  margin: 0;
+  color: var(--h5-ink);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.form-card label {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.form-card label span,
+.amount-limit {
+  color: var(--h5-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.amount-limit {
+  margin: -6px 0 2px;
+  color: var(--h5-blue);
+}
+
+.form-card :deep(.el-input-number),
+.form-card :deep(.el-date-editor.el-input),
+.form-card :deep(.el-textarea) {
+  width: 100%;
+}
+
+.preview-link {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--h5-blue);
+  border-radius: 999px;
+  background: var(--h5-soft);
+  color: var(--h5-blue);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.sheet-actions .el-button {
+  width: 100%;
+  margin-left: 0;
+}
+
+@media (max-width: 390px) {
+  .detail-hero,
+  .detail-list div {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-hero img {
+    justify-self: center;
+  }
+}
+</style>
