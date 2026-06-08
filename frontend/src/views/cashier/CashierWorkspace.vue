@@ -90,6 +90,9 @@ const filteredPayouts = computed(() => {
 })
 const selectedVoucherFileName = computed(() => selectedVoucher.value?.fileName ?? null)
 const canPreviewVoucher = computed(() => Boolean(voucherPreviewUrl.value))
+const canUploadVoucher = computed(
+  () => Boolean(selectedPayout.value) && selectedPayout.value?.status === 'PENDING' && !uploading.value,
+)
 const canConfirmSelected = computed(
   () =>
     Boolean(selectedPayout.value) &&
@@ -185,6 +188,15 @@ function changePayoutFilter(key: string) {
 }
 
 function triggerVoucherUpload() {
+  if (uploading.value) {
+    return
+  }
+
+  if (!selectedPayout.value || selectedPayout.value.status !== 'PENDING') {
+    ElMessage.warning('已打款记录不能重新上传凭证。')
+    return
+  }
+
   voucherInput.value?.click()
 }
 
@@ -198,6 +210,15 @@ async function handleVoucherChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
+
+  if (uploading.value) {
+    return
+  }
+
+  if (!selectedPayout.value || selectedPayout.value.status !== 'PENDING') {
+    ElMessage.warning('已打款记录不能重新上传凭证。')
+    return
+  }
 
   if (!file || !selectedPayout.value?.applicationId) {
     return
@@ -476,6 +497,8 @@ onMounted(() => {
           description="支持 PNG、JPG、WEBP、PDF。上传后可立即预览。"
           :file-name="selectedVoucherFileName"
           :previewable="canPreviewVoucher"
+          :disabled="!canUploadVoucher"
+          :loading="uploading"
           @upload="triggerVoucherUpload"
           @preview="previewVoucher"
         />

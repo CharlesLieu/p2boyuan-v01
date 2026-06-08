@@ -118,8 +118,8 @@ async function refresh(selectedId = applications.selectedId) {
 }
 
 async function openApplication(applicationId: string) {
-  await applications.select(applicationId)
   detailVisible.value = true
+  await applications.select(applicationId)
 }
 
 function changeSalesTab(key: string) {

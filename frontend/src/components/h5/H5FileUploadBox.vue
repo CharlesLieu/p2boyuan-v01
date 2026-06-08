@@ -4,6 +4,8 @@ defineProps<{
   description?: string
   fileName?: string | null
   previewable?: boolean
+  disabled?: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{ upload: []; preview: [] }>()
@@ -18,13 +20,19 @@ const emit = defineEmits<{ upload: []; preview: [] }>()
     </div>
 
     <div class="h5-upload-actions">
-      <button type="button" class="h5-upload-button primary" @click="emit('upload')">
-        {{ fileName ? '重新上传' : '上传文件' }}
+      <button
+        type="button"
+        class="h5-upload-button primary"
+        :disabled="disabled || loading"
+        @click="emit('upload')"
+      >
+        {{ loading ? '上传中...' : fileName ? '重新上传' : '上传文件' }}
       </button>
       <button
         v-if="fileName && previewable"
         type="button"
         class="h5-upload-button"
+        :disabled="loading"
         @click="emit('preview')"
       >
         预览
@@ -107,6 +115,11 @@ const emit = defineEmits<{ upload: []; preview: [] }>()
   border-color: var(--h5-blue);
   background: var(--h5-blue);
   color: #fff;
+}
+
+.h5-upload-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 @media (max-width: 420px) {
