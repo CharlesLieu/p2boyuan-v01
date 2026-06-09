@@ -10,12 +10,41 @@ use App\Models\Attachment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AttachmentController extends Controller
 {
+    public function index(Request $request, string $applicationId): JsonResponse
+    {
+        $application = Application::query()
+            ->with('inspectionTasks')
+            ->find($applicationId);
+
+        if (! $application) {
+            return $this->notFound($request, 'APPLICATION_NOT_FOUND', '申请不存在或当前账号不可见。');
+        }
+
+        if (! $this->canAccessApplication($request->user(), $application)) {
+            return $this->forbidden($request);
+        }
+
+        $attachments = Attachment::query()
+            ->with('uploadedBy')
+            ->where('application_id', $application->id)
+            ->when($request->filled('module'), fn ($query) => $query->where('module', $request->string('module')->toString()))
+            ->latest()
+            ->get()
+            ->map(fn (Attachment $attachment) => $this->serializeAttachment($attachment))
+            ->values();
+
+        return $this->success($request, [
+            'items' => $attachments,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -61,6 +90,53 @@ class AttachmentController extends Controller
         ], '附件已上传。', 201);
     }
 
+    public function show(Request $request, string $attachmentId): JsonResponse
+    {
+        $attachment = Attachment::query()
+            ->with(['application.inspectionTasks', 'uploadedBy'])
+            ->find($attachmentId);
+
+        if (! $attachment || ! $attachment->application) {
+            return $this->notFound($request, 'ATTACHMENT_NOT_FOUND', '附件不存在或当前账号不可见。');
+        }
+
+        if (! $this->canAccessApplication($request->user(), $attachment->application)) {
+            return $this->forbidden($request);
+        }
+
+        return $this->success($request, [
+            'attachment' => $this->serializeAttachment($attachment),
+        ]);
+    }
+
+    public function download(Request $request, string $attachmentId): JsonResponse
+    {
+        $attachment = Attachment::query()
+            ->with(['application.inspectionTasks', 'uploadedBy'])
+            ->find($attachmentId);
+
+        if (! $attachment || ! $attachment->application) {
+            return $this->notFound($request, 'ATTACHMENT_NOT_FOUND', '附件不存在或当前账号不可见。');
+        }
+
+        if (! $this->canAccessApplication($request->user(), $attachment->application)) {
+            return $this->forbidden($request);
+        }
+
+        $exists = Storage::disk('public')->exists($attachment->file_path);
+        $url = Storage::disk('public')->url($attachment->file_path);
+
+        return $this->success($request, [
+            'id' => $attachment->id,
+            'fileName' => $attachment->file_name,
+            'mimeType' => $attachment->mime_type,
+            'fileSize' => $attachment->file_size,
+            'url' => $url,
+            'downloadUrl' => $url,
+            'exists' => $exists,
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -75,6 +151,9 @@ class AttachmentController extends Controller
             'mimeType' => $attachment->mime_type,
             'fileSize' => $attachment->file_size,
             'remark' => $attachment->remark,
+            'uploaderId' => $attachment->uploaded_by_user_id,
+            'uploaderName' => $attachment->uploadedBy?->display_name,
+            'uploaderRole' => $attachment->uploadedBy ? $this->roleValue($attachment->uploadedBy) : null,
             'createdAt' => $attachment->created_at?->toISOString(),
         ];
     }
@@ -153,6 +232,18 @@ class AttachmentController extends Controller
             ],
             'requestId' => $this->requestId($request),
         ], 403);
+    }
+
+    private function notFound(Request $request, string $code, string $message): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+            ],
+            'requestId' => $this->requestId($request),
+        ], 404);
     }
 
     private function roleValue(User $user): ?string

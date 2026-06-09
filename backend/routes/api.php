@@ -54,7 +54,10 @@ Route::middleware('auth:sanctum')
             ->middleware('role:STORE');
         Route::get('/merchant/vouchers/{voucherId}', [MerchantController::class, 'voucher'])
             ->middleware('role:STORE');
+        Route::get('/applications/{applicationId}/attachments', [AttachmentController::class, 'index']);
         Route::post('/attachments', [AttachmentController::class, 'store']);
+        Route::get('/attachments/{attachmentId}', [AttachmentController::class, 'show']);
+        Route::get('/attachments/{attachmentId}/download', [AttachmentController::class, 'download']);
         Route::post('/inspection-tasks/{inspectionTaskId}/start', [InspectionTaskController::class, 'start'])
             ->middleware('role:SALES,SUPER_ADMIN');
         Route::post('/inspection-tasks/{inspectionTaskId}/submit', [InspectionTaskController::class, 'submit'])
