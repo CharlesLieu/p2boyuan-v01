@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>版本迭代 PRD v0.1-v1.0 功能完成情况核对矩阵</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #fff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d7dce3;
+      --line-soft: #e8ebef;
+      --blue: #2563eb;
+      --green: #15803d;
+      --green-bg: #dcfce7;
+      --red: #b91c1c;
+      --red-bg: #fee2e2;
+      --gray: #4b5563;
+      --gray-bg: #e5e7eb;
+      --yellow: #92400e;
+      --yellow-bg: #fef3c7;
+      --blank-bg: #f9fafb;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 28px 32px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 1180px;
+    }
+
+    main { padding: 18px 24px 34px; }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1.3fr 0.8fr auto auto auto;
+      align-items: end;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea, button { font: inherit; }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    button {
+      height: 40px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    button:hover { border-color: var(--blue); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      padding: 12px 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    .matrix-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: auto;
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      min-width: 1180px;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line-soft);
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 91px;
+      z-index: 10;
+      padding: 12px 10px;
+      background: #f3f4f6;
+      color: #374151;
+      font-size: 13px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td {
+      padding: 10px;
+      background: #fff;
+    }
+
+    tr:hover td { background: #fbfdff; }
+
+    .module { width: 300px; }
+
+    .module-name {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .module-group {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 12px;
+    }
+
+    .module-desc {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-cell { width: 144px; }
+
+    .status-select { font-weight: 700; }
+    .status-complete { background: var(--green-bg); color: var(--green); border-color: #86efac; }
+    .status-incomplete { background: var(--red-bg); color: var(--red); border-color: #fecaca; }
+    .status-not-started { background: var(--gray-bg); color: var(--gray); border-color: #d1d5db; }
+    .status-unknown { background: var(--yellow-bg); color: var(--yellow); border-color: #fde68a; }
+    .status-blank { background: var(--blank-bg); color: var(--muted); }
+
+    .evidence { min-width: 320px; }
+
+    textarea {
+      min-height: 82px;
+      resize: vertical;
+      font-size: 13px;
+    }
+
+    .meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .footnote {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #eef2f7;
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+
+    @media (max-width: 900px) {
+      header { padding: 22px 18px 16px; }
+      main { padding: 14px; }
+      .toolbar { position: static; grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      th { top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>版本迭代 PRD v0.1-v1.0 功能完成情况核对矩阵</h1>
+    <p class="subtitle">
+      来源：<code>PRD_版本迭代文档</code> 中 v0.1 到 v1.0 的版本迭代 PRD。
+    </p>
+  </header>
+
+  <main>
+    <section class="toolbar" aria-label="工具栏">
+      <div>
+        <label for="searchInput">搜索功能模块</label>
+        <input id="searchInput" type="search" placeholder="例如：放款、账单、设备、通知、权限" />
+      </div>
+      <div>
+        <label for="statusFilter">按状态筛选</label>
+        <select id="statusFilter">
+          <option value="">全部状态</option>
+          <option value="完成">完成</option>
+          <option value="未完成">未完成</option>
+          <option value="未开始">未开始</option>
+          <option value="未知">未知</option>
+          <option value="__blank__">空白</option>
+        </select>
+      </div>
+      <button class="primary" id="exportJsonBtn" type="button">导出 JSON</button>
+      <button id="exportCsvBtn" type="button">导出 CSV</button>
+      <button id="resetBtn" type="button">恢复初始判断</button>
+    </section>
+
+    <section class="stats" aria-label="统计">
+      <div class="stat"><strong id="totalCount">0</strong><span>当前显示模块</span></div>
+      <div class="stat"><strong id="completeCount">0</strong><span>完成</span></div>
+      <div class="stat"><strong id="incompleteCount">0</strong><span>未完成</span></div>
+      <div class="stat"><strong id="notStartedCount">0</strong><span>未开始</span></div>
+      <div class="stat"><strong id="unknownCount">0</strong><span>未知 / 空白</span></div>
+    </section>
+
+    <p class="legend">
+      <span>完成：有可用实现并能支撑业务闭环</span>
+      <span>未完成：半成品、错位实现或缺核心逻辑</span>
+      <span>未开始：未看到实现</span>
+      <span>未知：证据不足，需要会上确认</span>
+    </p>
+
+    <section class="matrix-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="module">PRD v0.1-v1.0 功能模块</th>
+            <th class="status-cell">前端完成情况</th>
+            <th class="status-cell">后端完成情况</th>
+            <th class="status-cell">联调情况</th>
+            <th class="status-cell">测试情况</th>
+            <th class="evidence">会议证据 / 备注</th>
+          </tr>
+        </thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </section>
+
+    <p class="footnote">
+      说明：本矩阵按 v0.1 到 v1.0 的版本路线累计展开功能点。修改会自动保存在当前浏览器 localStorage。
+    </p>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "p2boyuan-version-prd-v01-v10-coverage-matrix";
+    const statuses = ["", "完成", "未完成", "未开始", "未知"];
+    const columns = ["frontend", "backend", "integration", "testing"];
+
+    const initialRows = [
+      { id: "v01-fixed-accounts-login", group: "v0.1 远程彩排 MVP", module: "固定测试账号登录", desc: "店家、业务员、审核员、出纳、超级管理员固定账号登录。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有固定 demo 账号、登录、me、logout 和 AuthTest。stage-shop 有另一路 app 登录，但不是 v0.1 标准角色体系。" },
+      { id: "v01-store-application", group: "v0.1 远程彩排 MVP", module: "店家提交到店客户申请", desc: "店家提交客户、设备、贷款金额、期数和附件资料。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "当前 Laravel 最新口径限制店家不能创建客户申请，超管可创建 demo 申请；如果按原 v0.1 文档，店家提交申请未完成。需会上确认以哪个口径验收。" },
+      { id: "v01-auditor-assign", group: "v0.1 远程彩排 MVP", module: "审核员指派业务员", desc: "审核员查看待指派申请并指派业务员。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 assign 接口、角色权限和重复指派测试。" },
+      { id: "v01-sales-inspection", group: "v0.1 远程彩排 MVP", module: "业务员验机处理", desc: "业务员开始验机、上传/提交验机资料、退回补资料。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 start/submit/reject inspection 和业务员任务隔离测试。" },
+      { id: "v01-audit-review", group: "v0.1 远程彩排 MVP", module: "后台审核通过 / 驳回 / 补资料", desc: "审核员终审、驳回或要求补充资料。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 approve/reject/request-supplement/submit-supplement 流程和测试。" },
+      { id: "v01-cashier-payout", group: "v0.1 远程彩排 MVP", module: "出纳打款与凭证", desc: "出纳查看待放款申请，上传凭证并确认已打款。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 payout confirm、金额校验、重复确认测试。" },
+      { id: "v01-store-voucher", group: "v0.1 远程彩排 MVP", module: "店家查看打款凭证", desc: "店家查看本店申请状态和打款凭证。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 merchant vouchers 和商家隔离测试。" },
+      { id: "v01-super-admin-reset", group: "v0.1 远程彩排 MVP", module: "超级管理员一键重置与账号查看", desc: "超管重置测试数据、查看账号、状态日志。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 demo reset、accounts 和状态调整测试。" },
+
+      { id: "v02-formal-account-management", group: "v0.2 内部试运行", module: "正式账号管理", desc: "创建、停用、重置密码、角色分配。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 只有 demo accounts；stage-shop 有冻结/改密但权限风险高，不能算正式账号管理。" },
+      { id: "v02-permission-hardening", group: "v0.2 内部试运行", module: "角色权限与数据隔离完善", desc: "店家只看本店，业务员只看分配任务，越权拒绝。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 角色中间件和多项越权测试已覆盖核心边界。" },
+      { id: "v02-attachment-center", group: "v0.2 内部试运行", module: "附件上传 / 预览 / 下载 / 文件中心", desc: "图片和 PDF 上传、预览、下载，按申请查看附件。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 有附件上传和校验测试，但文件中心、预览/下载完整链路未看到后端验收。" },
+      { id: "v02-application-numbering", group: "v0.2 内部试运行", module: "申请编号规则", desc: "按日期和流水生成申请编号。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有申请编号生成和碰撞重试测试。" },
+      { id: "v02-review-notes", group: "v0.2 内部试运行", module: "审核备注 / 驳回原因 / 补资料记录", desc: "审核相关说明不可丢失。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel review_records、status_logs 和补资料流程覆盖主要记录。" },
+      { id: "v02-list-filters", group: "v0.2 内部试运行", module: "列表筛选", desc: "按状态、店家、业务员、时间范围、关键词筛选。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "当前有基础列表和部分可见范围，未看到完整多条件筛选测试。" },
+      { id: "v02-mobile-usability", group: "v0.2 内部试运行", module: "手机端可用性优化", desc: "门店和外勤手机端列表、详情、上传可用。", frontend: "", backend: "", integration: "", testing: "", note: "这是前端/联调验收项，目前未看前端，先留空。" },
+
+      { id: "v03-store-onboarding", group: "v0.3 店家/业务员正式化", module: "店家入驻申请", desc: "店铺资料、联系人、证件、营业执照、收款信息。", frontend: "", backend: "完成", integration: "", testing: "完成", note: "Laravel 有 merchant onboarding、后台审核和测试；stage-shop 也有入驻雏形。" },
+      { id: "v03-sales-onboarding", group: "v0.3 店家/业务员正式化", module: "业务员入驻申请", desc: "姓名、手机号、身份信息、证件照片、负责区域。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有申请成为 SALES 的雏形；Laravel 未实现完整业务员入驻。" },
+      { id: "v03-onboarding-review", group: "v0.3 店家/业务员正式化", module: "后台入驻审核", desc: "入驻通过、驳回、补资料。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 商家入驻通过/驳回完成；业务员入驻与补资料不完整。" },
+      { id: "v03-store-profile", group: "v0.3 店家/业务员正式化", module: "店家资料管理", desc: "门店地址、联系人、收款信息、营业状态。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 有商家资料读取和入驻字段；正式资料管理/营业状态未完整。" },
+      { id: "v03-sales-profile", group: "v0.3 店家/业务员正式化", module: "业务员资料管理", desc: "区域、状态、任务量、联系方式。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 有 active sales list；区域、任务量、资料维护不足。" },
+      { id: "v03-store-inspection-form", group: "v0.3 店家/业务员正式化", module: "店家发起验机申请完整表单", desc: "审核通过的店家可发起正式验机申请。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 有申请/验机任务，但不是 v0.3 店家正式发起验机申请完整表单。" },
+      { id: "v03-sales-task-actions", group: "v0.3 店家/业务员正式化", module: "业务员接单 / 拒单 / 联系 / 开始 / 提交", desc: "业务员完整处理线下任务。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 支持开始/提交/退回；接单、拒单、联系记录未完整。" },
+      { id: "v03-reassign-load", group: "v0.3 店家/业务员正式化", module: "后台重新派单与任务负载", desc: "按区域和任务量辅助派单，支持重新派单。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "未看到区域/任务负载/重新派单完整能力。" },
+
+      { id: "v04-user-phone-register-login", group: "v0.4 C端用户申请", module: "C端手机号注册登录", desc: "普通用户手机号注册和登录。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有账号注册登录但非手机号验证码体系；Laravel 是固定角色账号。" },
+      { id: "v04-user-profile", group: "v0.4 C端用户申请", module: "用户个人资料维护", desc: "普通用户资料、身份认证状态等。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有昵称/头像/密码；完整 C端个人资料未完成。" },
+      { id: "v04-user-self-application", group: "v0.4 C端用户申请", module: "用户自主提交分期申请", desc: "普通用户自助提交申请和资料。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有分期申请雏形；权限/状态/测试不足。" },
+      { id: "v04-my-applications-orders", group: "v0.4 C端用户申请", module: "我的申请 / 我的订单", desc: "用户查看自己的申请、订单和审核进度。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有订单/申请列表雏形，缺完整状态和测试。" },
+      { id: "v04-user-supplement", group: "v0.4 C端用户申请", module: "用户补充资料", desc: "用户查看驳回原因、补资料要求并重新提交。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "Laravel 补资料在 v0.1 角色流程内；C端用户补资料未完整实现。" },
+      { id: "v04-user-messages", group: "v0.4 C端用户申请", module: "用户消息列表", desc: "展示审核、补资料、放款等节点消息。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到通知中心消息表。" },
+      { id: "v04-source-type", group: "v0.4 C端用户申请", module: "申请来源区分", desc: "后台区分店家代提交和用户自助申请。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop/文档均提到来源方向，但现有可用后端未完整。" },
+
+      { id: "v05-product-list-search", group: "v0.5 商品与分期购机", module: "首页商品列表 / 分类 / 搜索", desc: "首页商品列表，支持机型分类和基础搜索。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有商品列表，缺完整分类、搜索和测试。" },
+      { id: "v05-product-detail", group: "v0.5 商品与分期购机", module: "商品详情 / SKU / 价格计划", desc: "图片、机型、颜色、容量、分期售价、参数。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有商品属性/分期快照，缺完整 SKU/图片/价格计划。" },
+      { id: "v05-admin-product", group: "v0.5 商品与分期购机", module: "后台商品管理", desc: "新增、编辑、上下架、价格配置。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有后台商品 CRUD，权限和测试不足。" },
+      { id: "v05-installment-entry", group: "v0.5 商品与分期购机", module: "商品进入分期申请", desc: "用户点击立即分期购买进入分期申请。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有分期申请接口，但未看到完整前后端链路。" },
+      { id: "v05-application-bind-product", group: "v0.5 商品与分期购机", module: "申请绑定商品 / SKU / 价格 / 期数", desc: "分期申请绑定商品、SKU、价格、期数。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 部分绑定 product/快照；SKU/状态一致性不足。" },
+      { id: "v05-order-generation", group: "v0.5 商品与分期购机", module: "订单草稿 / 待审核订单生成", desc: "提交后生成订单草稿或待审核订单。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 后台审核通过后生成订单；不是提交后草稿/待审核完整流程。" },
+      { id: "v05-order-list-detail", group: "v0.5 商品与分期购机", module: "订单列表和详情", desc: "订单展示待审核、审核中、已通过、已驳回。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有订单列表，状态映射和测试不足。" },
+      { id: "v05-store-sales-code", group: "v0.5 商品与分期购机", module: "店家编码 / 业务员编码绑定", desc: "申请绑定店家和业务员渠道编码。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有 code 校验，但权限和任务归属校验不足。" },
+
+      { id: "v06-bill-generation", group: "v0.6 账单还款", module: "放款后自动生成分期账单", desc: "审核通过并放款后自动生成正确期数账单。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 在后台终审通过后生成账单，不是在放款后；且缺测试。" },
+      { id: "v06-user-bill-detail", group: "v0.6 账单还款", module: "用户我的账单 / 账单详情", desc: "展示应还金额、到期日、当前期数和还款计划。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有账单列表雏形，缺完整 C端账单详情验收。" },
+      { id: "v06-repayment-voucher", group: "v0.6 账单还款", module: "用户上传还款凭证", desc: "用户上传每期还款凭证。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop repayment 查询把 billId 写成 customerId，核心功能有 bug。" },
+      { id: "v06-finance-writeoff", group: "v0.6 账单还款", module: "财务人工核销还款", desc: "财务核对到账并更新账单状态。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有 reviewRepayment 雏形，缺权限、流水和测试。" },
+      { id: "v06-overdue", group: "v0.6 账单还款", module: "逾期标记和逾期列表", desc: "逾期状态、逾期天数、后台逾期列表。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有字段但未见规则和任务。" },
+      { id: "v06-bill-admin-filter", group: "v0.6 账单还款", module: "后台账单管理筛选", desc: "按用户、订单、状态、到期日筛选。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "stage-shop 有简单 queryList，缺完整筛选和测试。" },
+      { id: "v06-order-settled", group: "v0.6 账单还款", module: "全部还清后订单结清", desc: "全部账单还清后订单标记已结清。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到自动结清逻辑。" },
+
+      { id: "v07-sms-service", group: "v0.7 通知自动化", module: "短信服务接口", desc: "短信服务接入或测试接入。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到 SmsService 适配层。" },
+      { id: "v07-notification-center", group: "v0.7 通知自动化", module: "站内通知中心", desc: "未读、已读、分类和通知详情。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到 notification 表和接口。" },
+      { id: "v07-auto-notification", group: "v0.7 通知自动化", module: "关键节点自动通知", desc: "申请、补资料、审核通过、放款完成、还款到期和逾期提醒。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到业务事件触发通知。" },
+      { id: "v07-template-log", group: "v0.7 通知自动化", module: "通知模板和发送日志", desc: "模板管理、成功/失败/重试日志。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到模板和发送日志。" },
+
+      { id: "v08-user-device", group: "v0.8 设备锁机", module: "用户设备管理和设备详情", desc: "机型、IMEI、订单号、绑定状态、分期进度、锁机状态。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到 device/device_binding 实现。" },
+      { id: "v08-admin-device", group: "v0.8 设备锁机", module: "后台设备管理", desc: "后台设备列表、设备详情和锁机记录。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到后台设备接口。" },
+      { id: "v08-lock-history", group: "v0.8 设备锁机", module: "锁机状态和锁机历史", desc: "未绑定、已绑定、正常、预警、已锁定、待解锁、已解锁。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到锁机状态字段/历史表。" },
+      { id: "v08-lock-unlock-task", group: "v0.8 设备锁机", module: "逾期锁机和结清解锁任务", desc: "逾期生成锁机任务，结清生成解锁任务。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到锁机/解锁任务。" },
+      { id: "v08-device-lock-service", group: "v0.8 设备锁机", module: "DeviceLockService mock 接口", desc: "第一阶段 mock 真实锁机接口。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到服务适配层。" },
+
+      { id: "v09-payment-account", group: "v0.9 财务增强", module: "正式收款账户管理", desc: "收款账户维护和权限管理。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到正式收款账户管理。" },
+      { id: "v09-online-payment", group: "v0.9 财务增强", module: "线上支付方式和支付凭证", desc: "线上支付方式选择、支付凭证记录。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "stage-shop 只有人工首付凭证，不是正式线上支付。" },
+      { id: "v09-bank-transfer", group: "v0.9 财务增强", module: "银行打款接口预留 / 试接入", desc: "银行打款记录、回调或 mock。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到 BankTransferService 或 bank_transfer_record。" },
+      { id: "v09-payout-approval", group: "v0.9 财务增强", module: "放款复核机制", desc: "出纳提交，财务主管复核。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "Laravel 只有出纳确认；无财务主管复核。" },
+      { id: "v09-payout-failure-retry", group: "v0.9 财务增强", module: "放款失败和重新打款", desc: "失败原因、重新处理和状态追踪。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到失败重试流程。" },
+      { id: "v09-finance-ledger", group: "v0.9 财务增强", module: "财务流水表和业务单据关联", desc: "流水关联订单、申请、账单、用户、店家。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "现有 payout_records 不等于正式 finance_ledger。" },
+      { id: "v09-receipt-report", group: "v0.9 财务增强", module: "回单归档和财务报表导出", desc: "打款回单归档，放款、回款、逾期报表导出。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到归档和导出。" },
+
+      { id: "v10-production-integration", group: "v1.0 正式生产基础版", module: "生产基础版全链路整合", desc: "整合分期购机、门店验机、审核、放款、账单、设备、通知和权限。", frontend: "", backend: "未完成", integration: "", testing: "未完成", note: "v0.1 核心闭环完成较多；v0.5-v0.9 多数能力未完成或仅有 stage-shop 半成品，因此 v1.0 整体不能算完成。" },
+      { id: "v10-backup-security", group: "v1.0 正式生产基础版", module: "基础安全、备份、监控和数据管理", desc: "安全测试、备份演练、生产数据权限和监控。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到备份任务、监控、恢复演练或生产权限验收材料。" },
+      { id: "v10-basic-statistics", group: "v1.0 正式生产基础版", module: "基础统计", desc: "申请量、通过率、放款金额、逾期数量。", frontend: "", backend: "未开始", integration: "", testing: "未开始", note: "未看到统计聚合接口或报表测试。" }
+    ];
+
+    let rows = loadRows();
+
+    function loadRows() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(initialRows);
+      try {
+        const parsed = JSON.parse(raw);
+        const byId = new Map(parsed.map((row) => [row.id, row]));
+        return initialRows.map((row) => ({ ...row, ...(byId.get(row.id) || {}) }));
+      } catch (error) {
+        console.warn("无法读取本地保存数据，已恢复初始判断。", error);
+        return structuredClone(initialRows);
+      }
+    }
+
+    function saveRows() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rows, null, 2));
+    }
+
+    function statusClass(value) {
+      if (value === "完成") return "status-complete";
+      if (value === "未完成") return "status-incomplete";
+      if (value === "未开始") return "status-not-started";
+      if (value === "未知") return "status-unknown";
+      return "status-blank";
+    }
+
+    function render() {
+      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+      const filter = document.getElementById("statusFilter").value;
+      const body = document.getElementById("matrixBody");
+      body.innerHTML = "";
+
+      const visibleRows = rows.filter((row) => {
+        const haystack = `${row.group} ${row.module} ${row.desc} ${row.note}`.toLowerCase();
+        const matchesQuery = !query || haystack.includes(query);
+        const values = columns.map((column) => row[column] || "");
+        const matchesFilter = !filter ||
+          (filter === "__blank__" ? values.some((value) => value === "") : values.some((value) => value === filter));
+        return matchesQuery && matchesFilter;
+      });
+
+      for (const row of visibleRows) {
+        const tr = document.createElement("tr");
+        tr.dataset.id = row.id;
+
+        const moduleTd = document.createElement("td");
+        moduleTd.className = "module";
+        moduleTd.innerHTML = `
+          <span class="module-group">${escapeHtml(row.group)}</span>
+          <div class="module-name">${escapeHtml(row.module)}</div>
+          <div class="module-desc">${escapeHtml(row.desc)}</div>
+        `;
+        tr.appendChild(moduleTd);
+
+        for (const column of columns) {
+          const td = document.createElement("td");
+          td.className = "status-cell";
+          const select = document.createElement("select");
+          select.className = `status-select ${statusClass(row[column])}`;
+          select.dataset.id = row.id;
+          select.dataset.column = column;
+          for (const status of statuses) {
+            const option = document.createElement("option");
+            option.value = status;
+            option.textContent = status || "空白";
+            if ((row[column] || "") === status) option.selected = true;
+            select.appendChild(option);
+          }
+          select.addEventListener("change", handleStatusChange);
+          td.appendChild(select);
+          tr.appendChild(td);
+        }
+
+        const noteTd = document.createElement("td");
+        noteTd.className = "evidence";
+        const textarea = document.createElement("textarea");
+        textarea.dataset.id = row.id;
+        textarea.value = row.note || "";
+        textarea.placeholder = "会议现场记录：负责人、接口地址、截图、阻塞点、待验证事项...";
+        textarea.addEventListener("input", handleNoteChange);
+        noteTd.appendChild(textarea);
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `模块 ID：${row.id}`;
+        noteTd.appendChild(meta);
+        tr.appendChild(noteTd);
+
+        body.appendChild(tr);
+      }
+
+      updateStats(visibleRows);
+    }
+
+    function handleStatusChange(event) {
+      const { id, column } = event.target.dataset;
+      const row = rows.find((item) => item.id === id);
+      row[column] = event.target.value;
+      event.target.className = `status-select ${statusClass(event.target.value)}`;
+      saveRows();
+      render();
+    }
+
+    function handleNoteChange(event) {
+      const row = rows.find((item) => item.id === event.target.dataset.id);
+      row.note = event.target.value;
+      saveRows();
+    }
+
+    function updateStats(visibleRows) {
+      const values = visibleRows.flatMap((row) => columns.map((column) => row[column] || ""));
+      document.getElementById("totalCount").textContent = visibleRows.length;
+      document.getElementById("completeCount").textContent = values.filter((value) => value === "完成").length;
+      document.getElementById("incompleteCount").textContent = values.filter((value) => value === "未完成").length;
+      document.getElementById("notStartedCount").textContent = values.filter((value) => value === "未开始").length;
+      document.getElementById("unknownCount").textContent = values.filter((value) => value === "未知" || value === "").length;
+    }
+
+    function exportJson() {
+      downloadFile("version-prd-v10-coverage-matrix.json", JSON.stringify(rows, null, 2), "application/json;charset=utf-8");
+    }
+
+    function exportCsv() {
+      const header = ["功能分组", "功能模块", "说明", "前端完成情况", "后端完成情况", "联调情况", "测试情况", "会议证据/备注"];
+      const lines = [header, ...rows.map((row) => [
+        row.group,
+        row.module,
+        row.desc,
+        row.frontend || "",
+        row.backend || "",
+        row.integration || "",
+        row.testing || "",
+        row.note || ""
+      ])].map((line) => line.map(csvCell).join(","));
+      downloadFile("version-prd-v10-coverage-matrix.csv", lines.join("\n"), "text/csv;charset=utf-8");
+    }
+
+    function downloadFile(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function csvCell(value) {
+      return `"${String(value).replaceAll('"', '""')}"`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", render);
+    document.getElementById("statusFilter").addEventListener("change", render);
+    document.getElementById("exportJsonBtn").addEventListener("click", exportJson);
+    document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (!confirm("确认恢复到 v1.0 正式生产基础版 PRD 的初始代码 review 判断？这会覆盖你在本浏览器里的修改。")) return;
+      rows = structuredClone(initialRows);
+      saveRows();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
