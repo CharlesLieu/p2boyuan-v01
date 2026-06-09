@@ -18,6 +18,7 @@ use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
 use App\Models\StatusLog;
 use App\Models\User;
+use App\Services\ApplicationNumberService;
 use App\Services\ApplicationStateService;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,8 +31,10 @@ use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
 {
-    public function __construct(private readonly ApplicationStateService $stateService)
-    {
+    public function __construct(
+        private readonly ApplicationStateService $stateService,
+        private readonly ApplicationNumberService $applicationNumberService,
+    ) {
     }
 
     public function index(Request $request): JsonResponse
@@ -474,11 +477,6 @@ class ApplicationController extends Controller
         ];
     }
 
-    private function nextApplicationNo(): string
-    {
-        return 'A'.now()->format('YmdHis').str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
-    }
-
     /**
      * @param array<string, mixed> $validated
      */
@@ -488,7 +486,7 @@ class ApplicationController extends Controller
             try {
                 return DB::transaction(function () use ($validated, $user, $storeId): Application {
                     $application = Application::query()->create([
-                        'application_no' => $this->nextApplicationNo(),
+                        'application_no' => $this->applicationNumberService->next(),
                         'source_type' => 'ADMIN_CREATE',
                         'store_id' => $storeId,
                         'created_by_user_id' => $user->id,

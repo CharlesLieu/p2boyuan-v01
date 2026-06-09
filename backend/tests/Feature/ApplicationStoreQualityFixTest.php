@@ -1,18 +1,5 @@
 <?php
 
-namespace App\Http\Controllers\Api {
-    function random_int(int $min, int $max): int
-    {
-        if (isset($GLOBALS['application_controller_random_int'])
-            && is_array($GLOBALS['application_controller_random_int'])
-            && $GLOBALS['application_controller_random_int'] !== []) {
-            return array_shift($GLOBALS['application_controller_random_int']);
-        }
-
-        return \random_int($min, $max);
-    }
-}
-
 namespace Tests\Feature {
     use App\Enums\ApplicationStatus;
     use App\Enums\UserRole;
@@ -29,7 +16,6 @@ namespace Tests\Feature {
 
         protected function tearDown(): void
         {
-            unset($GLOBALS['application_controller_random_int']);
             Carbon::setTestNow();
 
             parent::tearDown();
@@ -47,18 +33,17 @@ namespace Tests\Feature {
                 ->assertJsonPath('error.code', 'AUTH_FORBIDDEN');
         }
 
-        public function test_application_number_collision_is_retried_without_500(): void
+        public function test_application_number_increments_from_existing_daily_sequence(): void
         {
             $this->seed(DemoSeeder::class);
             Carbon::setTestNow(Carbon::parse('2026-05-30 21:30:00'));
-            $GLOBALS['application_controller_random_int'] = [123, 124];
 
             $admin = User::query()->where('username', 'admin001')->firstOrFail();
             $storeUser = User::query()->where('username', 'store001')->firstOrFail();
-            $collisionNo = 'A20260530213000123';
+            $existingNo = 'A202605300001';
 
             Application::query()->create([
-                'application_no' => $collisionNo,
+                'application_no' => $existingNo,
                 'source_type' => 'USER_SUBMIT',
                 'store_id' => $storeUser->store_id,
                 'created_by_user_id' => $storeUser->id,
@@ -87,9 +72,8 @@ namespace Tests\Feature {
                 ->assertCreated()
                 ->assertJsonPath('success', true);
 
-            $this->assertNotSame($collisionNo, $response->json('data.application.applicationNo'));
             $this->assertDatabaseHas('applications', [
-                'application_no' => 'A20260530213000124',
+                'application_no' => 'A202605300002',
                 'customer_name' => '彩排客户',
             ]);
         }
