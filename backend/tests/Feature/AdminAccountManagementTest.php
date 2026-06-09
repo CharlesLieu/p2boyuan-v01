@@ -144,6 +144,34 @@ class AdminAccountManagementTest extends TestCase
             ->assertJsonPath('data.user.username', 'cashier-reset');
     }
 
+    public function test_super_admin_cannot_update_store_or_sales_role_without_required_binding(): void
+    {
+        $admin = $this->superAdmin();
+        $user = User::factory()->create([
+            'username' => 'binding-test',
+            'display_name' => '待绑定账号',
+            'role' => UserRole::CASHIER,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->actingAs($admin, 'sanctum')
+            ->patchJson("/api/v1/admin/accounts/{$user->id}", [
+                'role' => UserRole::STORE->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'VALIDATION_ERROR')
+            ->assertJsonValidationErrors(['storeId'], 'error.fields');
+
+        $this->actingAs($admin, 'sanctum')
+            ->patchJson("/api/v1/admin/accounts/{$user->id}", [
+                'role' => UserRole::SALES->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonValidationErrors(['salesAgentId'], 'error.fields');
+    }
+
     public function test_non_super_admin_cannot_manage_accounts(): void
     {
         $storeUser = User::factory()->create([
