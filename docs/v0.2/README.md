@@ -6,6 +6,7 @@
 
 - `v0.2_内部试运行版_PRD.docx`：版本路线图里的 v0.2 PRD。
 - `v0.2_标准完整PRD.md` / `v0.2_标准完整PRD.docx`：按最新商家权限口径整理后的完整 PRD。
+- `v0.2_升级范围与实施规格说明.md`：从当前系统升级到 v0.2 的开发范围、默认产品决策和验收边界。
 
 ## 技术交付
 
@@ -26,4 +27,3 @@
 - `v0.2-h5-competitor-style-preview.html`：H5 竞品风格总览预览。
 - `v0.2-sales-intake-h5-preview.html`：业务员录单台 H5 预览。
 - `v0.2-ui-structure-preview.html`：页面结构预览。
-
