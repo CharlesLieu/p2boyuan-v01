@@ -27,6 +27,9 @@ class User extends Authenticatable
         'sales_agent_id',
         'status',
         'last_login_at',
+        'password_updated_at',
+        'disabled_at',
+        'disabled_reason',
     ];
 
     protected $hidden = [
@@ -54,6 +57,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'password_updated_at' => 'datetime',
+            'disabled_at' => 'datetime',
             'role' => UserRole::class,
             'password' => 'hashed',
         ];
