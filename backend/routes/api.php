@@ -67,6 +67,14 @@ Route::middleware('auth:sanctum')
             ->middleware('role:CASHIER,SUPER_ADMIN');
         Route::get('/admin/accounts', [AdminController::class, 'accounts'])
             ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/accounts', [AdminController::class, 'createAccount'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::patch('/admin/accounts/{user}', [AdminController::class, 'updateAccount'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/accounts/{user}/disable', [AdminController::class, 'disableAccount'])
+            ->middleware('role:SUPER_ADMIN');
+        Route::post('/admin/accounts/{user}/reset-password', [AdminController::class, 'resetPassword'])
+            ->middleware('role:SUPER_ADMIN');
         Route::post('/admin/reset-demo-data', [AdminController::class, 'resetDemoData'])
             ->middleware('role:SUPER_ADMIN');
         Route::post('/admin/applications/{application}/status', [AdminController::class, 'updateApplicationStatus'])

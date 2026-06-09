@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Enums\ApplicationStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminAccountStoreRequest;
+use App\Http\Requests\AdminAccountUpdateRequest;
+use App\Http\Requests\AdminPasswordResetRequest;
 use App\Models\Application;
 use App\Models\StatusLog;
 use App\Models\User;
@@ -12,6 +15,7 @@ use App\Services\DemoDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -36,6 +40,112 @@ class AdminController extends Controller
         return $this->success($request, [
             'items' => $accounts,
         ]);
+    }
+
+    public function createAccount(AdminAccountStoreRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $role = $this->inputValue($validated['role']);
+
+        $user = User::query()->create([
+            'username' => $validated['username'],
+            'display_name' => $validated['displayName'],
+            'password' => Hash::make($validated['password']),
+            'role' => $role,
+            'status' => 'ACTIVE',
+            'store_id' => $role === UserRole::STORE->value ? ($validated['storeId'] ?? null) : null,
+            'sales_agent_id' => $role === UserRole::SALES->value ? ($validated['salesAgentId'] ?? null) : null,
+            'password_updated_at' => now(),
+        ]);
+
+        return $this->success($request, [
+            'account' => $this->serializeAccount($user->fresh(['store', 'salesAgent'])),
+        ], '账号已创建。', 201);
+    }
+
+    public function updateAccount(AdminAccountUpdateRequest $request, User $user): JsonResponse
+    {
+        $validated = $request->validated();
+        $role = array_key_exists('role', $validated)
+            ? $this->inputValue($validated['role'])
+            : $this->roleValue($user);
+
+        $updates = [];
+
+        if (array_key_exists('displayName', $validated)) {
+            $updates['display_name'] = $validated['displayName'];
+        }
+
+        if (array_key_exists('role', $validated)) {
+            $updates['role'] = $role;
+        }
+
+        if (array_key_exists('status', $validated)) {
+            $updates['status'] = $validated['status'];
+
+            if ($validated['status'] === 'DISABLED') {
+                $updates['disabled_at'] = now();
+                $updates['disabled_reason'] = $validated['disabledReason'] ?? $user->disabled_reason;
+            } else {
+                $updates['disabled_at'] = null;
+                $updates['disabled_reason'] = null;
+            }
+        }
+
+        if (array_key_exists('storeId', $validated) || array_key_exists('role', $validated)) {
+            $updates['store_id'] = $role === UserRole::STORE->value ? ($validated['storeId'] ?? $user->store_id) : null;
+        }
+
+        if (array_key_exists('salesAgentId', $validated) || array_key_exists('role', $validated)) {
+            $updates['sales_agent_id'] = $role === UserRole::SALES->value ? ($validated['salesAgentId'] ?? $user->sales_agent_id) : null;
+        }
+
+        $user->forceFill($updates)->save();
+
+        return $this->success($request, [
+            'account' => $this->serializeAccount($user->fresh(['store', 'salesAgent'])),
+        ], '账号已更新。');
+    }
+
+    public function disableAccount(Request $request, User $user): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'disabledReason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationError($request, '停用原因格式不正确。', $validator->errors()->toArray());
+        }
+
+        $validated = $validator->validated();
+
+        $user->forceFill([
+            'status' => 'DISABLED',
+            'disabled_at' => now(),
+            'disabled_reason' => $validated['disabledReason'] ?? '超级管理员停用账号。',
+        ])->save();
+
+        $user->tokens()->delete();
+
+        return $this->success($request, [
+            'account' => $this->serializeAccount($user->fresh(['store', 'salesAgent'])),
+        ], '账号已停用。');
+    }
+
+    public function resetPassword(AdminPasswordResetRequest $request, User $user): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $user->forceFill([
+            'password' => Hash::make($validated['password']),
+            'password_updated_at' => now(),
+        ])->save();
+
+        $user->tokens()->delete();
+
+        return $this->success($request, [
+            'account' => $this->serializeAccount($user->fresh(['store', 'salesAgent'])),
+        ], '账号密码已重置。');
     }
 
     public function resetDemoData(Request $request): JsonResponse
@@ -126,6 +236,9 @@ class AdminController extends Controller
             'role' => $this->roleValue($user),
             'name' => $user->display_name,
             'status' => $user->status,
+            'passwordUpdatedAt' => $user->password_updated_at?->toISOString(),
+            'disabledAt' => $user->disabled_at?->toISOString(),
+            'disabledReason' => $user->disabled_reason,
             'store' => $user->store ? [
                 'id' => $user->store->id,
                 'storeCode' => $user->store->store_code,
