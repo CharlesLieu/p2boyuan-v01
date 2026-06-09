@@ -38,6 +38,10 @@ class AttachmentController extends Controller
             return $this->forbidden($request);
         }
 
+        if (! $this->canUploadModule($request->user(), $validated['module'])) {
+            return $this->forbidden($request);
+        }
+
         $file = $validated['file'];
         $path = $file->store('demo-attachments', 'public');
 
@@ -124,6 +128,19 @@ class AttachmentController extends Controller
         }
 
         return false;
+    }
+
+    private function canUploadModule(User $user, string $module): bool
+    {
+        $role = $this->roleValue($user);
+
+        return match ($role) {
+            UserRole::SUPER_ADMIN->value,
+            UserRole::AUDITOR->value => true,
+            UserRole::SALES->value => in_array($module, ['INSPECTION', 'SUPPLEMENT'], true),
+            UserRole::CASHIER->value => in_array($module, ['PAYOUT', 'VOUCHER'], true),
+            default => false,
+        };
     }
 
     private function forbidden(Request $request): JsonResponse
