@@ -33,6 +33,9 @@ export interface AttachmentInfo {
   mimeType?: string | null
   fileSize?: number | null
   remark?: string | null
+  uploaderId?: number | null
+  uploaderName?: string | null
+  uploaderRole?: string | null
   createdAt?: string | null
 }
 
@@ -103,6 +106,9 @@ export interface DemoAccount {
   role: Exclude<OwnerRole, null>
   name: string
   status: string
+  passwordUpdatedAt?: string | null
+  disabledAt?: string | null
+  disabledReason?: string | null
   store: { id: string; storeCode: string; name: string; status: string } | null
   salesAgent: {
     id: string
@@ -121,6 +127,34 @@ export interface SalesAgentOption {
   name: string
   phone: string | null
   status: string
+}
+
+export interface AdminAccountPayload {
+  username: string
+  displayName: string
+  password: string
+  role: Exclude<OwnerRole, null>
+  storeId?: string | null
+  salesAgentId?: string | null
+}
+
+export interface AdminAccountUpdatePayload {
+  displayName?: string
+  role?: Exclude<OwnerRole, null>
+  status?: 'ACTIVE' | 'DISABLED'
+  storeId?: string | null
+  salesAgentId?: string | null
+  disabledReason?: string | null
+}
+
+export interface AttachmentDownloadInfo {
+  id: string
+  fileName: string | null
+  mimeType: string | null
+  fileSize: number | null
+  url: string
+  downloadUrl: string
+  exists: boolean
 }
 
 export interface ApplicationItem {
@@ -313,6 +347,22 @@ export async function uploadAttachment(payload: UploadAttachmentPayload) {
   return response.data.data.attachment
 }
 
+export async function listApplicationAttachments(applicationId: string) {
+  const response = await apiClient.get<ApiEnvelope<{ items: AttachmentInfo[] }>>(
+    `/applications/${applicationId}/attachments`,
+  )
+
+  return response.data.data.items
+}
+
+export async function getAttachmentDownload(attachmentId: string) {
+  const response = await apiClient.get<ApiEnvelope<AttachmentDownloadInfo>>(
+    `/attachments/${attachmentId}/download`,
+  )
+
+  return response.data.data
+}
+
 export async function listPayouts(limit = 50) {
   const response = await apiClient.get<ApiEnvelope<{ items: PayoutRecord[] }>>('/payouts', {
     params: { limit },
@@ -342,6 +392,39 @@ export async function listDemoAccounts() {
   const response = await apiClient.get<ApiEnvelope<{ items: DemoAccount[] }>>('/admin/accounts')
 
   return response.data.data.items
+}
+
+export async function createAdminAccount(payload: AdminAccountPayload) {
+  const response = await apiClient.post<ApiEnvelope<{ account: DemoAccount }>>('/admin/accounts', payload)
+
+  return response.data.data.account
+}
+
+export async function updateAdminAccount(accountId: number, payload: AdminAccountUpdatePayload) {
+  const response = await apiClient.patch<ApiEnvelope<{ account: DemoAccount }>>(
+    `/admin/accounts/${accountId}`,
+    payload,
+  )
+
+  return response.data.data.account
+}
+
+export async function disableAdminAccount(accountId: number, disabledReason: string) {
+  const response = await apiClient.post<ApiEnvelope<{ account: DemoAccount }>>(
+    `/admin/accounts/${accountId}/disable`,
+    { disabledReason },
+  )
+
+  return response.data.data.account
+}
+
+export async function resetAdminAccountPassword(accountId: number, password: string) {
+  const response = await apiClient.post<ApiEnvelope<{ account: DemoAccount }>>(
+    `/admin/accounts/${accountId}/reset-password`,
+    { password },
+  )
+
+  return response.data.data.account
 }
 
 export async function resetDemoData() {

@@ -1,16 +1,26 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, SetUp } from '@element-plus/icons-vue'
 import ApplicationDetail from '../../components/application/ApplicationDetail.vue'
 import ApplicationList from '../../components/application/ApplicationList.vue'
 import {
+  createAdminAccount,
+  disableAdminAccount,
+  getAttachmentDownload,
+  listApplicationAttachments,
   listDemoAccounts,
+  listSalesAgents,
   overrideApplicationStatus,
   resetDemoData,
+  resetAdminAccountPassword,
+  updateAdminAccount,
+  type AdminAccountPayload,
+  type AttachmentInfo,
   type ApplicationStatus,
   type DemoAccount,
   type OwnerRole,
+  type SalesAgentOption,
 } from '../../api/modules/applications'
 import {
   approveMerchant,
@@ -27,14 +37,19 @@ import { useApplicationsStore } from '../../stores/applications'
 
 const applications = useApplicationsStore()
 const accounts = ref<DemoAccount[]>([])
+const salesAgents = ref<SalesAgentOption[]>([])
 const merchants = ref<MerchantOnboarding[]>([])
 const merchantVouchers = ref<MerchantVoucher[]>([])
+const applicationAttachments = ref<AttachmentInfo[]>([])
 const accountsLoading = ref(false)
+const attachmentsLoading = ref(false)
 const merchantsLoading = ref(false)
 const vouchersLoading = ref(false)
 const operating = ref(false)
 const merchantRejectReason = ref('收款主体与商家资质名称不一致，请重新提交。')
 const voucherVoidReason = ref('凭证信息有误，测试作废。')
+const accountDisableReason = ref('测试账号暂时停用。')
+const accountResetPassword = ref('123456')
 const statusForm = reactive<{
   status: ApplicationStatus
   currentOwnerRole: OwnerRole
@@ -60,6 +75,15 @@ const statusOptions: ApplicationStatus[] = [
   'COMPLETED',
 ]
 const ownerRoleOptions: OwnerRole[] = [null, 'SALES', 'AUDITOR', 'CASHIER']
+const accountRoleOptions: Exclude<OwnerRole, null>[] = ['STORE', 'SALES', 'AUDITOR', 'CASHIER', 'SUPER_ADMIN']
+const accountForm = reactive<AdminAccountPayload>({
+  username: '',
+  displayName: '',
+  password: '123456',
+  role: 'STORE',
+  storeId: '',
+  salesAgentId: '',
+})
 const voucherForm = reactive<AdminMerchantVoucherPayload>({
   storeId: '',
   relatedBusinessNo: 'A202606080001',
@@ -79,10 +103,17 @@ const voucherForm = reactive<AdminMerchantVoucherPayload>({
 })
 
 async function refresh(selectedId = applications.selectedId) {
-  await Promise.all([applications.fetch(), fetchAccounts(), fetchMerchants(), fetchMerchantVouchers()])
+  await Promise.all([
+    applications.fetch(),
+    fetchAccounts(),
+    fetchSalesAgents(),
+    fetchMerchants(),
+    fetchMerchantVouchers(),
+  ])
   if (selectedId) {
     await applications.select(selectedId)
   }
+  await fetchApplicationAttachments()
 }
 
 async function fetchAccounts() {
@@ -94,6 +125,14 @@ async function fetchAccounts() {
     ElMessage.error(errorMessage(error))
   } finally {
     accountsLoading.value = false
+  }
+}
+
+async function fetchSalesAgents() {
+  try {
+    salesAgents.value = await listSalesAgents()
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
   }
 }
 
@@ -110,6 +149,23 @@ async function fetchMerchants() {
     ElMessage.error(errorMessage(error))
   } finally {
     merchantsLoading.value = false
+  }
+}
+
+async function fetchApplicationAttachments() {
+  if (!applications.selectedId) {
+    applicationAttachments.value = []
+    return
+  }
+
+  attachmentsLoading.value = true
+
+  try {
+    applicationAttachments.value = await listApplicationAttachments(applications.selectedId)
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  } finally {
+    attachmentsLoading.value = false
   }
 }
 
@@ -196,6 +252,83 @@ async function createMerchantVoucher() {
   }
 }
 
+async function createAccount() {
+  operating.value = true
+
+  try {
+    await createAdminAccount({
+      ...accountForm,
+      storeId: accountForm.role === 'STORE' ? accountForm.storeId : null,
+      salesAgentId: accountForm.role === 'SALES' ? accountForm.salesAgentId : null,
+    })
+    ElMessage.success('账号已创建。')
+    accountForm.username = ''
+    accountForm.displayName = ''
+    await fetchAccounts()
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  } finally {
+    operating.value = false
+  }
+}
+
+async function disableAccount(row: DemoAccount) {
+  operating.value = true
+
+  try {
+    await disableAdminAccount(row.id, accountDisableReason.value)
+    ElMessage.success('账号已停用。')
+    await fetchAccounts()
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  } finally {
+    operating.value = false
+  }
+}
+
+async function activateAccount(row: DemoAccount) {
+  operating.value = true
+
+  try {
+    await updateAdminAccount(row.id, {
+      status: 'ACTIVE',
+      role: row.role,
+      storeId: row.store?.id ?? null,
+      salesAgentId: row.salesAgent?.id ?? null,
+      disabledReason: null,
+    })
+    ElMessage.success('账号已启用。')
+    await fetchAccounts()
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  } finally {
+    operating.value = false
+  }
+}
+
+async function resetAccountPassword(row: DemoAccount) {
+  operating.value = true
+
+  try {
+    await resetAdminAccountPassword(row.id, accountResetPassword.value)
+    ElMessage.success('密码已重置。')
+    await fetchAccounts()
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  } finally {
+    operating.value = false
+  }
+}
+
+async function previewAttachment(row: AttachmentInfo) {
+  try {
+    const download = await getAttachmentDownload(row.id)
+    window.open(download.url || download.downloadUrl, '_blank', 'noopener,noreferrer')
+  } catch (error) {
+    ElMessage.error(errorMessage(error))
+  }
+}
+
 async function voidVoucher(row: MerchantVoucher) {
   operating.value = true
 
@@ -258,6 +391,13 @@ function errorMessage(error: unknown) {
 onMounted(() => {
   refresh()
 })
+
+watch(
+  () => applications.selectedId,
+  () => {
+    fetchApplicationAttachments()
+  },
+)
 </script>
 
 <template>
@@ -345,25 +485,60 @@ onMounted(() => {
     <section class="admin-grid">
       <div class="table-panel">
         <div class="panel-heading">
-          <h3>测试账号</h3>
-          <el-tag type="danger" effect="plain">密码 123456</el-tag>
+          <h3>账号管理</h3>
+          <el-tag type="danger" effect="plain">{{ accounts.length }} 个</el-tag>
         </div>
         <el-table v-loading="accountsLoading" :data="accounts" height="300" row-key="id">
           <el-table-column prop="username" label="账号" min-width="110" />
           <el-table-column prop="name" label="姓名" min-width="120" />
           <el-table-column prop="role" label="角色" width="120" />
+          <el-table-column prop="status" label="状态" width="100" />
           <el-table-column label="归属" min-width="160">
             <template #default="{ row }">{{ row.store?.name ?? row.salesAgent?.name ?? '-' }}</template>
           </el-table-column>
-          <el-table-column label="设为处理人" width="110">
+          <el-table-column label="操作" width="260">
             <template #default="{ row }">
               <el-button size="small" @click="useAccountOwner(row)">选择</el-button>
+              <el-button size="small" plain @click="resetAccountPassword(row)">重置密码</el-button>
+              <el-button
+                v-if="row.status === 'ACTIVE'"
+                size="small"
+                type="danger"
+                plain
+                @click="disableAccount(row)"
+              >
+                停用
+              </el-button>
+              <el-button v-else size="small" type="success" plain @click="activateAccount(row)">启用</el-button>
             </template>
           </el-table-column>
         </el-table>
       </div>
 
       <div class="operator-column">
+        <h3>新建账号</h3>
+        <el-input v-model="accountForm.username" placeholder="账号，如 store003" />
+        <el-input v-model="accountForm.displayName" placeholder="显示名称" />
+        <el-input v-model="accountForm.password" placeholder="初始密码" show-password />
+        <el-select v-model="accountForm.role" placeholder="角色">
+          <el-option v-for="role in accountRoleOptions" :key="role" :label="role" :value="role" />
+        </el-select>
+        <el-select v-if="accountForm.role === 'STORE'" v-model="accountForm.storeId" placeholder="绑定门店">
+          <el-option
+            v-for="merchant in merchants"
+            :key="merchant.id"
+            :label="merchant.merchantName"
+            :value="merchant.storeId"
+            :disabled="!merchant.storeId"
+          />
+        </el-select>
+        <el-select v-if="accountForm.role === 'SALES'" v-model="accountForm.salesAgentId" placeholder="绑定业务员档案">
+          <el-option v-for="agent in salesAgents" :key="agent.id" :label="agent.name" :value="agent.id" />
+        </el-select>
+        <el-input v-model="accountDisableReason" placeholder="默认停用原因" />
+        <el-input v-model="accountResetPassword" placeholder="默认重置密码" show-password />
+        <el-button type="primary" :loading="operating" @click="createAccount">创建账号</el-button>
+
         <h3>手动设置申请状态</h3>
         <el-select v-model="statusForm.status" placeholder="状态">
           <el-option v-for="status in statusOptions" :key="status" :label="status" :value="status" />
@@ -399,5 +574,24 @@ onMounted(() => {
         @load-logs="applications.loadLogs()"
       />
     </div>
+
+    <section class="table-panel">
+      <div class="panel-heading">
+        <h3>申请附件中心</h3>
+        <el-tag effect="plain">{{ applicationAttachments.length }} 个文件</el-tag>
+      </div>
+      <el-table v-loading="attachmentsLoading" :data="applicationAttachments" height="260" row-key="id">
+        <el-table-column prop="module" label="模块" width="120" />
+        <el-table-column prop="fileName" label="文件名" min-width="180" />
+        <el-table-column prop="mimeType" label="类型" width="150" />
+        <el-table-column prop="uploaderName" label="上传人" width="130" />
+        <el-table-column prop="createdAt" label="上传时间" min-width="170" />
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button size="small" type="primary" plain @click="previewAttachment(row)">预览</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
   </section>
 </template>
