@@ -94,9 +94,12 @@ class MerchantController extends Controller
 
     public function vouchers(Request $request): JsonResponse
     {
-        $items = MerchantPaymentVoucher::query()
-            ->where('store_id', $request->user()->store_id)
-            ->latest('paid_at')
+        $query = MerchantPaymentVoucher::query()
+            ->where('store_id', $request->user()->store_id);
+
+        $this->applyVoucherFilters($query, $request);
+
+        $items = $query->latest('paid_at')
             ->latest()
             ->limit((int) min(max($request->integer('limit', 50), 1), 100))
             ->get()
@@ -124,9 +127,12 @@ class MerchantController extends Controller
 
     public function adminMerchants(Request $request): JsonResponse
     {
-        $items = MerchantOnboardingApplication::query()
-            ->with('store')
-            ->latest()
+        $query = MerchantOnboardingApplication::query()
+            ->with('store');
+
+        $this->applyOnboardingFilters($query, $request);
+
+        $items = $query->latest()
             ->limit((int) min(max($request->integer('limit', 50), 1), 100))
             ->get()
             ->map(fn (MerchantOnboardingApplication $onboarding) => $this->serializeOnboarding($onboarding))
@@ -232,9 +238,12 @@ class MerchantController extends Controller
 
     public function adminVouchers(Request $request): JsonResponse
     {
-        $items = MerchantPaymentVoucher::query()
-            ->with('store')
-            ->latest('paid_at')
+        $query = MerchantPaymentVoucher::query()
+            ->with('store');
+
+        $this->applyVoucherFilters($query, $request, allowStoreFilter: true);
+
+        $items = $query->latest('paid_at')
             ->latest()
             ->limit((int) min(max($request->integer('limit', 50), 1), 100))
             ->get()
@@ -374,6 +383,72 @@ class MerchantController extends Controller
         ];
     }
 
+    private function applyOnboardingFilters($query, Request $request): void
+    {
+        $statuses = $this->listParam($request, 'status');
+        if ($statuses !== []) {
+            $query->whereIn('status', $statuses);
+        }
+
+        if ($request->filled('storeId')) {
+            $query->where('store_id', $request->string('storeId'));
+        }
+
+        if ($request->filled('createdFrom')) {
+            $query->where('created_at', '>=', $request->string('createdFrom'));
+        }
+
+        if ($request->filled('createdTo')) {
+            $query->where('created_at', '<=', $request->string('createdTo'));
+        }
+
+        if ($request->filled('keyword')) {
+            $keyword = trim((string) $request->string('keyword'));
+            $query->where(function ($keywordQuery) use ($keyword): void {
+                $keywordQuery
+                    ->where('applicant_name', 'like', "%{$keyword}%")
+                    ->orWhere('applicant_phone', 'like', "%{$keyword}%")
+                    ->orWhere('merchant_name', 'like', "%{$keyword}%")
+                    ->orWhere('contact_name', 'like', "%{$keyword}%")
+                    ->orWhere('contact_phone', 'like', "%{$keyword}%")
+                    ->orWhereHas('store', fn ($storeQuery) => $storeQuery->where('name', 'like', "%{$keyword}%"));
+            });
+        }
+    }
+
+    private function applyVoucherFilters($query, Request $request, bool $allowStoreFilter = false): void
+    {
+        $statuses = $this->listParam($request, 'status');
+        if ($statuses !== []) {
+            $query->whereIn('status', $statuses);
+        }
+
+        if ($allowStoreFilter && $request->filled('storeId')) {
+            $query->where('store_id', $request->string('storeId'));
+        }
+
+        if ($request->filled('paidFrom')) {
+            $query->where('paid_at', '>=', $request->string('paidFrom'));
+        }
+
+        if ($request->filled('paidTo')) {
+            $query->where('paid_at', '<=', $request->string('paidTo'));
+        }
+
+        if ($request->filled('keyword')) {
+            $keyword = trim((string) $request->string('keyword'));
+            $query->where(function ($keywordQuery) use ($keyword): void {
+                $keywordQuery
+                    ->where('voucher_no', 'like', "%{$keyword}%")
+                    ->orWhere('related_business_no', 'like', "%{$keyword}%")
+                    ->orWhere('payee_name', 'like', "%{$keyword}%")
+                    ->orWhere('payer_name', 'like', "%{$keyword}%")
+                    ->orWhere('remark', 'like', "%{$keyword}%")
+                    ->orWhereHas('store', fn ($storeQuery) => $storeQuery->where('name', 'like', "%{$keyword}%"));
+            });
+        }
+    }
+
     private function serializeStoreProfile(Store $store): array
     {
         return [
@@ -473,6 +548,24 @@ class MerchantController extends Controller
     private function nextVoucherNo(): string
     {
         return 'PV'.now()->format('YmdHis').str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function listParam(Request $request, string $key): array
+    {
+        $value = $request->input($key);
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('strval', $value), fn (string $item) => trim($item) !== ''));
+        }
+
+        if (is_string($value)) {
+            return array_values(array_filter(array_map('trim', explode(',', $value)), fn (string $item) => $item !== ''));
+        }
+
+        return [];
     }
 
     private function success(Request $request, mixed $data = null, ?string $message = null, int $status = 200): JsonResponse

@@ -26,9 +26,12 @@ class PayoutController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $payouts = $this->visiblePayouts($request->user())
-            ->with(['application.store', 'cashier', 'voucherAttachment'])
-            ->latest()
+        $query = $this->visiblePayouts($request->user())
+            ->with(['application.store', 'cashier', 'voucherAttachment']);
+
+        $this->applyPayoutFilters($query, $request);
+
+        $payouts = $query->latest()
             ->limit((int) min(max($request->integer('limit', 50), 1), 100))
             ->get()
             ->map(fn (PayoutRecord $payout) => $this->serializePayoutRecord($payout, includeApplication: true))
@@ -92,6 +95,44 @@ class PayoutController extends Controller
 
         return PayoutRecord::query()
             ->when($role === UserRole::CASHIER->value, fn (Builder $query) => $query->whereIn('status', ['PENDING', 'PAID']));
+    }
+
+    private function applyPayoutFilters(Builder $query, Request $request): void
+    {
+        $statuses = $this->listParam($request, 'status');
+        if ($statuses !== []) {
+            $query->whereIn('status', $statuses);
+        }
+
+        if ($request->filled('storeId')) {
+            $query->whereHas('application', fn (Builder $applicationQuery) => $applicationQuery
+                ->where('store_id', $request->string('storeId')));
+        }
+
+        if ($request->filled('paidFrom')) {
+            $query->where('paid_at', '>=', $request->string('paidFrom'));
+        }
+
+        if ($request->filled('paidTo')) {
+            $query->where('paid_at', '<=', $request->string('paidTo'));
+        }
+
+        if ($request->filled('keyword')) {
+            $keyword = trim((string) $request->string('keyword'));
+            $query->where(function (Builder $keywordQuery) use ($keyword): void {
+                $keywordQuery
+                    ->whereHas('application', function (Builder $applicationQuery) use ($keyword): void {
+                        $applicationQuery
+                            ->where('application_no', 'like', "%{$keyword}%")
+                            ->orWhere('customer_name', 'like', "%{$keyword}%")
+                            ->orWhere('customer_phone', 'like', "%{$keyword}%")
+                            ->orWhere('model', 'like', "%{$keyword}%")
+                            ->orWhereHas('store', fn (Builder $storeQuery) => $storeQuery
+                                ->where('name', 'like', "%{$keyword}%"));
+                    })
+                    ->orWhere('remark', 'like', "%{$keyword}%");
+            });
+        }
     }
 
     /**
@@ -166,6 +207,24 @@ class PayoutController extends Controller
     private function roleValue(User $user): ?string
     {
         return $user->role instanceof UserRole ? $user->role->value : $user->role;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function listParam(Request $request, string $key): array
+    {
+        $value = $request->input($key);
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('strval', $value), fn (string $item) => trim($item) !== ''));
+        }
+
+        if (is_string($value)) {
+            return array_values(array_filter(array_map('trim', explode(',', $value)), fn (string $item) => $item !== ''));
+        }
+
+        return [];
     }
 
     private function success(Request $request, mixed $data = null, ?string $message = null, int $status = 200): JsonResponse

@@ -16,6 +16,7 @@ use App\Models\InspectionTask;
 use App\Models\PayoutRecord;
 use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
+use App\Models\StatusLog;
 use App\Models\User;
 use App\Services\ApplicationNumberService;
 use App\Services\ApplicationStateService;
@@ -44,9 +45,12 @@ class ApplicationController extends Controller
             return $this->forbidden($request);
         }
 
-        $applications = $this->visibleApplications($request->user())
-            ->with(['store', 'createdBy'])
-            ->latest()
+        $query = $this->visibleApplications($request->user())
+            ->with(['store', 'createdBy']);
+
+        $this->applyApplicationFilters($query, $request);
+
+        $applications = $query->latest()
             ->limit((int) min(max($request->integer('limit', 50), 1), 100))
             ->get()
             ->map(fn (Application $application) => $this->serializeApplication($application))
@@ -300,6 +304,49 @@ class ApplicationController extends Controller
             });
     }
 
+    private function applyApplicationFilters(Builder $query, Request $request): void
+    {
+        $statuses = $this->listParam($request, 'status');
+        if ($statuses !== []) {
+            $query->whereIn('status', $statuses);
+        }
+
+        if ($request->filled('storeId')) {
+            $query->where('store_id', $request->string('storeId'));
+        }
+
+        if ($request->filled('salesAgentId')) {
+            $query->whereHas('inspectionTasks', fn (Builder $taskQuery) => $taskQuery
+                ->where('sales_agent_id', $request->string('salesAgentId')));
+        }
+
+        if ($request->filled('ownerRole')) {
+            $query->where('current_owner_role', $request->string('ownerRole'));
+        }
+
+        if ($request->filled('createdFrom')) {
+            $query->where('created_at', '>=', $request->string('createdFrom'));
+        }
+
+        if ($request->filled('createdTo')) {
+            $query->where('created_at', '<=', $request->string('createdTo'));
+        }
+
+        if ($request->filled('keyword')) {
+            $keyword = trim((string) $request->string('keyword'));
+            $query->where(function (Builder $keywordQuery) use ($keyword): void {
+                $keywordQuery
+                    ->where('application_no', 'like', "%{$keyword}%")
+                    ->orWhere('customer_name', 'like', "%{$keyword}%")
+                    ->orWhere('customer_phone', 'like', "%{$keyword}%")
+                    ->orWhere('model', 'like', "%{$keyword}%")
+                    ->orWhere('imei', 'like', "%{$keyword}%")
+                    ->orWhereHas('store', fn (Builder $storeQuery) => $storeQuery
+                        ->where('name', 'like', "%{$keyword}%"));
+            });
+        }
+    }
+
     private function findVisibleApplication(Request $request, string $applicationId): ?Application
     {
         return $this->visibleApplications($request->user())
@@ -536,6 +583,24 @@ class ApplicationController extends Controller
     private function roleValue(User $user): ?string
     {
         return $user->role instanceof UserRole ? $user->role->value : $user->role;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function listParam(Request $request, string $key): array
+    {
+        $value = $request->input($key);
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('strval', $value), fn (string $item) => trim($item) !== ''));
+        }
+
+        if (is_string($value)) {
+            return array_values(array_filter(array_map('trim', explode(',', $value)), fn (string $item) => $item !== ''));
+        }
+
+        return [];
     }
 
     private function success(Request $request, mixed $data = null, ?string $message = null, int $status = 200): JsonResponse
