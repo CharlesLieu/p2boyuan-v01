@@ -54,7 +54,7 @@ async function submitLogin() {
   <main class="login-page">
     <section class="login-hero">
       <div class="hero-copy">
-        <p class="eyebrow">V0.1 业务工作台</p>
+        <p class="eyebrow">V0.2 业务工作台</p>
         <h1>回收金融业务流程平台</h1>
         <p class="hero-subtitle">
           商家、业务员、审核、出纳、超级管理员五个角色协同处理从验机、审核到打款凭证查看的业务闭环。
@@ -69,7 +69,7 @@ async function submitLogin() {
             <span>闭环流程</span>
           </div>
           <div>
-            <strong>0.1</strong>
+            <strong>0.2</strong>
             <span>版本阶段</span>
           </div>
         </div>
