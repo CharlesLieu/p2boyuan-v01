@@ -16,10 +16,10 @@ use App\Models\InspectionTask;
 use App\Models\PayoutRecord;
 use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
-use App\Models\StatusLog;
 use App\Models\User;
 use App\Services\ApplicationNumberService;
 use App\Services\ApplicationStateService;
+use App\Services\StatusLogService;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -34,6 +34,7 @@ class ApplicationController extends Controller
     public function __construct(
         private readonly ApplicationStateService $stateService,
         private readonly ApplicationNumberService $applicationNumberService,
+        private readonly StatusLogService $statusLogService,
     ) {
     }
 
@@ -510,18 +511,15 @@ class ApplicationController extends Controller
                         'remark' => $validated['remark'] ?? null,
                     ]);
 
-                    StatusLog::query()->create([
-                        'application_id' => $application->id,
-                        'actor_user_id' => $user->id,
-                        'actor_role' => $this->roleValue($user),
-                        'from_status' => null,
-                        'to_status' => ApplicationStatus::PENDING_ASSIGNMENT->value,
-                        'message' => '后台创建测试申请。',
-                        'metadata' => [
-                            'action' => 'SUBMIT_APPLICATION',
-                            'source' => 'ApplicationController',
-                        ],
-                    ]);
+                    $this->statusLogService->record(
+                        $application,
+                        $user,
+                        'SUBMIT_APPLICATION',
+                        null,
+                        ApplicationStatus::PENDING_ASSIGNMENT,
+                        '后台创建测试申请。',
+                        ['source' => 'ApplicationController'],
+                    );
 
                     return $application->fresh(['store', 'createdBy']);
                 });

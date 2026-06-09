@@ -11,13 +11,16 @@ use App\Models\MerchantPaymentVoucher;
 use App\Models\PayoutRecord;
 use App\Models\ReviewRecord;
 use App\Models\SalesAgent;
-use App\Models\StatusLog;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class ApplicationStateService
 {
+    public function __construct(private readonly StatusLogService $statusLogService)
+    {
+    }
+
     /**
      * @return array{application: Application, task: InspectionTask}
      */
@@ -447,15 +450,10 @@ class ApplicationStateService
      */
     private function log(Application $application, User $actor, ?ApplicationStatus $from, ApplicationStatus $to, string $message, array $metadata): void
     {
-        StatusLog::query()->create([
-            'application_id' => $application->id,
-            'actor_user_id' => $actor->id,
-            'actor_role' => $actor->role instanceof UserRole ? $actor->role->value : $actor->role,
-            'from_status' => $from?->value,
-            'to_status' => $to->value,
-            'message' => $message,
-            'metadata' => $metadata,
-        ]);
+        $action = (string) ($metadata['action'] ?? 'STATUS_CHANGE');
+        unset($metadata['action']);
+
+        $this->statusLogService->record($application, $actor, $action, $from, $to, $message, $metadata);
     }
 
     private function firstActiveUserIdForSalesAgent(?SalesAgent $salesAgent): ?int

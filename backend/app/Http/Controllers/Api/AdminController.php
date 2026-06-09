@@ -9,9 +9,9 @@ use App\Http\Requests\AdminAccountStoreRequest;
 use App\Http\Requests\AdminAccountUpdateRequest;
 use App\Http\Requests\AdminPasswordResetRequest;
 use App\Models\Application;
-use App\Models\StatusLog;
 use App\Models\User;
 use App\Services\DemoDataService;
+use App\Services\StatusLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +23,10 @@ use Illuminate\Validation\Validator as ValidatorInstance;
 
 class AdminController extends Controller
 {
-    public function __construct(private readonly DemoDataService $demoDataService)
-    {
+    public function __construct(
+        private readonly DemoDataService $demoDataService,
+        private readonly StatusLogService $statusLogService,
+    ) {
     }
 
     public function accounts(Request $request): JsonResponse
@@ -204,20 +206,19 @@ class AdminController extends Controller
                 'remark' => $message,
             ])->save();
 
-            StatusLog::query()->create([
-                'application_id' => $application->id,
-                'actor_user_id' => $request->user()->id,
-                'actor_role' => $this->roleValue($request->user()),
-                'from_status' => $fromStatus,
-                'to_status' => $toStatus,
-                'message' => $message,
-                'metadata' => [
-                    'action' => 'SUPER_ADMIN_STATUS_OVERRIDE',
+            $this->statusLogService->record(
+                $application,
+                $request->user(),
+                'SUPER_ADMIN_STATUS_OVERRIDE',
+                $fromStatus ? ApplicationStatus::from($fromStatus) : null,
+                ApplicationStatus::from($toStatus),
+                $message,
+                [
                     'source' => 'AdminController',
                     'currentOwnerRole' => $application->current_owner_role,
                     'currentOwnerUserId' => $application->current_owner_user_id,
                 ],
-            ]);
+            );
         });
 
         return $this->success($request, [
