@@ -32,6 +32,7 @@ const voucherInput = ref<HTMLInputElement | null>(null)
 const voucherAttachment = ref<AttachmentInfo | null>(null)
 const activeTab = ref<CashierTab>('payouts')
 const payoutFilter = ref<PayoutStatusFilter>('ALL')
+const searchKeyword = ref('')
 const auth = useAuthStore()
 const router = useRouter()
 
@@ -108,7 +109,11 @@ async function fetchPayouts() {
   loading.value = true
 
   try {
-    payouts.value = await listPayouts()
+    payouts.value = await listPayouts({
+      limit: 100,
+      status: payoutFilter.value === 'ALL' || payoutFilter.value === 'VOUCHER_ISSUE' ? null : payoutFilter.value,
+      keyword: searchKeyword.value,
+    })
     if (!selectedPayoutId.value || !payouts.value.some((item) => item.id === selectedPayoutId.value)) {
       selectedPayoutId.value = payouts.value[0]?.id ?? null
     }
@@ -188,6 +193,7 @@ function changeCashierTab(key: string) {
 function changePayoutFilter(key: string) {
   if (payoutStatusTabs.some((tab) => tab.key === key)) {
     payoutFilter.value = key as PayoutStatusFilter
+    fetchPayouts()
   }
 }
 
@@ -354,6 +360,19 @@ onMounted(() => {
       </H5OverviewCard>
 
       <H5StatusTabs :tabs="payoutStatusTabs" :active="payoutFilter" @change="changePayoutFilter" />
+
+      <el-input
+        v-model="searchKeyword"
+        class="h5-search-input"
+        clearable
+        placeholder="搜索订单号、客户、商家"
+        @keyup.enter="fetchPayouts"
+        @clear="fetchPayouts"
+      >
+        <template #append>
+          <el-button @click="fetchPayouts">搜索</el-button>
+        </template>
+      </el-input>
 
       <div class="payout-list" :class="{ loading }">
         <el-skeleton v-if="loading" :rows="8" animated />
@@ -559,6 +578,19 @@ onMounted(() => {
   display: grid;
   gap: 14px;
   min-width: 0;
+}
+
+.h5-search-input {
+  --el-border-radius-base: 18px;
+  min-width: 0;
+}
+
+.h5-search-input :deep(.el-input__wrapper),
+.h5-search-input :deep(.el-input-group__append) {
+  min-height: 46px;
+  border-color: var(--h5-border);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(61, 86, 150, 0.08);
 }
 
 .payout-list.loading {

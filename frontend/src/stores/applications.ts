@@ -4,6 +4,7 @@ import {
   getApplication,
   getApplicationLogs,
   listApplications,
+  type ApplicationListParams,
   type ApplicationItem,
   type ApplicationLog,
 } from '../api/modules/applications'
@@ -28,12 +29,12 @@ export const useApplicationsStore = defineStore('applications', () => {
 
   const selectedId = computed(() => selected.value?.id ?? null)
 
-  async function fetch(limit = 50) {
+  async function fetch(params: number | ApplicationListParams = 50) {
     loading.value = true
     error.value = null
 
     try {
-      items.value = await listApplications(limit)
+      items.value = await listApplications(params)
 
       if (items.value.length === 0) {
         selected.value = null

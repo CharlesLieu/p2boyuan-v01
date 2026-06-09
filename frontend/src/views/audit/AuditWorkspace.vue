@@ -10,6 +10,7 @@ import {
   listSalesAgents,
   rejectApplication,
   requestApplicationSupplement,
+  type ApplicationStatus,
   type SalesAgentOption,
 } from '../../api/modules/applications'
 import { useApplicationsStore } from '../../stores/applications'
@@ -17,6 +18,8 @@ import { useApplicationsStore } from '../../stores/applications'
 const applications = useApplicationsStore()
 const operating = ref(false)
 const salesAgentsLoading = ref(false)
+const statusFilter = ref<ApplicationStatus | 'ALL'>('ALL')
+const searchKeyword = ref('')
 const salesAgentId = ref('')
 const assignRemark = ref('请业务员到店完成设备验机并协助客户补齐申报资料。')
 const reviewNote = ref('资料完整，验机结果符合放款要求。')
@@ -26,11 +29,24 @@ const supplementNote = ref('请补充客户资料、设备照片或验机说明�
 
 const selected = computed(() => applications.selected)
 const salesAgentOptions = ref<SalesAgentOption[]>([])
+const statusOptions: Array<{ label: string; value: ApplicationStatus | 'ALL' }> = [
+  { label: '全部状态', value: 'ALL' },
+  { label: '待派单', value: 'PENDING_ASSIGNMENT' },
+  { label: '待审核', value: 'PENDING_REVIEW' },
+  { label: '需补资料', value: 'NEEDS_SUPPLEMENT' },
+  { label: '已驳回', value: 'REJECTED' },
+  { label: '待打款', value: 'PENDING_PAYOUT' },
+  { label: '已打款', value: 'PAID' },
+]
 const canAssign = computed(() => selected.value?.status === 'PENDING_ASSIGNMENT')
 const canReview = computed(() => selected.value?.status === 'PENDING_REVIEW')
 
 async function refresh(selectedId = applications.selectedId) {
-  await applications.fetch()
+  await applications.fetch({
+    limit: 100,
+    status: statusFilter.value === 'ALL' ? null : statusFilter.value,
+    keyword: searchKeyword.value,
+  })
   await discoverSalesAgents()
   if (selectedId) {
     await applications.select(selectedId)
@@ -142,6 +158,20 @@ onMounted(() => {
       <el-button :icon="Refresh" plain @click="refresh()">刷新</el-button>
     </div>
 
+    <section class="filter-panel">
+      <el-input
+        v-model="searchKeyword"
+        clearable
+        placeholder="搜索申请编号、客户、机型、门店"
+        @keyup.enter="refresh()"
+        @clear="refresh()"
+      />
+      <el-select v-model="statusFilter" placeholder="状态" @change="refresh()">
+        <el-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
+      </el-select>
+      <el-button type="primary" plain @click="refresh()">查询</el-button>
+    </section>
+
     <div class="summary-grid">
       <article><strong>全部申请</strong><span>{{ applications.items.length }} 单</span></article>
       <article><strong>待派单</strong><span>{{ applications.items.filter((item) => item.status === 'PENDING_ASSIGNMENT').length }} 单</span></article>
@@ -222,3 +252,23 @@ onMounted(() => {
     </div>
   </section>
 </template>
+
+<style scoped>
+.filter-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 180px auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+@media (max-width: 900px) {
+  .filter-panel {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

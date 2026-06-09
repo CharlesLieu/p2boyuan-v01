@@ -157,6 +157,22 @@ export interface AttachmentDownloadInfo {
   exists: boolean
 }
 
+export interface ApplicationListParams {
+  limit?: number
+  status?: ApplicationStatus | ApplicationStatus[] | null
+  keyword?: string | null
+  storeId?: string | null
+  salesAgentId?: string | null
+  ownerRole?: OwnerRole
+}
+
+export interface PayoutListParams {
+  limit?: number
+  status?: string | string[] | null
+  keyword?: string | null
+  storeId?: string | null
+}
+
 export interface ApplicationItem {
   id: string
   applicationNo: string
@@ -203,9 +219,10 @@ export interface ApplicationLog {
   createdAt: string | null
 }
 
-export async function listApplications(limit = 50) {
+export async function listApplications(params: number | ApplicationListParams = 50) {
+  const requestParams = typeof params === 'number' ? { limit: params } : normalizeParams(params)
   const response = await apiClient.get<ApiEnvelope<{ items: ApplicationItem[] }>>('/applications', {
-    params: { limit },
+    params: requestParams,
   })
 
   return response.data.data.items
@@ -363,9 +380,10 @@ export async function getAttachmentDownload(attachmentId: string) {
   return response.data.data
 }
 
-export async function listPayouts(limit = 50) {
+export async function listPayouts(params: number | PayoutListParams = 50) {
+  const requestParams = typeof params === 'number' ? { limit: params } : normalizeParams(params)
   const response = await apiClient.get<ApiEnvelope<{ items: PayoutRecord[] }>>('/payouts', {
-    params: { limit },
+    params: requestParams,
   })
 
   return response.data.data.items
@@ -450,4 +468,12 @@ export async function overrideApplicationStatus(
   )
 
   return response.data.data.application
+}
+
+function normalizeParams(params: object) {
+  return Object.fromEntries(
+    Object.entries(params)
+      .map(([key, value]) => [key, Array.isArray(value) ? value.join(',') : value])
+      .filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  )
 }

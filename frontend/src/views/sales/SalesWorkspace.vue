@@ -28,6 +28,7 @@ const operating = ref(false)
 const detailVisible = ref(false)
 const activeTab = ref<'tasks' | 'intake' | 'mine'>('tasks')
 const statusFilter = ref<ApplicationStatus | 'ALL'>('ALL')
+const searchKeyword = ref('')
 const inspectionNote = ref('IMEI 与商家资料一致，外观轻微使用痕迹，功能检测通过。')
 const rejectReason = ref('客户资料或设备照片不完整，请业务员补充后再验机。')
 const supplementNote = ref('业务员已补充验机现场照片和设备检测说明。')
@@ -113,7 +114,11 @@ const canSubmitSupplement = computed(
 )
 
 async function refresh(selectedId = applications.selectedId) {
-  await applications.fetch()
+  await applications.fetch({
+    limit: 100,
+    status: statusFilter.value === 'ALL' ? null : statusFilter.value,
+    keyword: searchKeyword.value,
+  })
   if (selectedId) {
     await applications.select(selectedId)
   }
@@ -133,6 +138,7 @@ function changeSalesTab(key: string) {
 function changeStatusFilter(key: string) {
   if (key === 'ALL' || statusTabs.some((tab) => tab.key === key)) {
     statusFilter.value = key as ApplicationStatus | 'ALL'
+    refresh()
   }
 }
 
@@ -223,7 +229,7 @@ function errorMessage(error: unknown) {
 }
 
 onMounted(() => {
-  applications.fetch()
+  refresh()
 })
 </script>
 
@@ -244,6 +250,19 @@ onMounted(() => {
       <el-alert v-if="applications.error" type="error" :title="applications.error" show-icon />
 
       <H5StatusTabs :tabs="statusTabs" :active="statusFilter" @change="changeStatusFilter" />
+
+      <el-input
+        v-model="searchKeyword"
+        class="h5-search-input"
+        clearable
+        placeholder="搜索订单号、客户、机型"
+        @keyup.enter="refresh()"
+        @clear="refresh()"
+      >
+        <template #append>
+          <el-button @click="refresh()">搜索</el-button>
+        </template>
+      </el-input>
 
       <div class="order-list" :class="{ loading: applications.loading }">
         <el-skeleton v-if="applications.loading" :rows="8" animated />
@@ -477,6 +496,19 @@ onMounted(() => {
   display: grid;
   gap: 14px;
   min-width: 0;
+}
+
+.h5-search-input {
+  --el-border-radius-base: 18px;
+  min-width: 0;
+}
+
+.h5-search-input :deep(.el-input__wrapper),
+.h5-search-input :deep(.el-input-group__append) {
+  min-height: 46px;
+  border-color: var(--h5-border);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(61, 86, 150, 0.08);
 }
 
 .order-list.loading {
